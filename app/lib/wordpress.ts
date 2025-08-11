@@ -1,10 +1,11 @@
 // lib/wordpress.ts - WordPress API service
-const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL;
+const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://publications.stmjournals.com/wp-json/wp/v2';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
 
+// Optional: Add validation with better error handling
 if (!WORDPRESS_API_URL) {
-  throw new Error('WORDPRESS_API_URL environment variable is required');
+  console.warn('WORDPRESS_API_URL not found, using default URL');
 }
 
 export interface Journal {
@@ -86,19 +87,25 @@ class WordPressAPI {
   private async fetchAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        cache: 'no-store', // Ensure fresh data
+        ...options,
+      });
 
-    if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`WordPress API error: ${response.status} - ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error(`Error fetching from ${url}:`, error);
+      throw error;
     }
-
-    return response.json();
   }
 
   async getJournals(params: {
@@ -119,13 +126,26 @@ class WordPressAPI {
       ...(params.categories && { categories: params.categories }),
     });
 
-    const response = await fetch(`${this.baseUrl}/posts?${queryParams}`);
-    const journals = await response.json();
-    
-    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
-    const total = parseInt(response.headers.get('X-WP-Total') || '0');
+    try {
+      const response = await fetch(`${this.baseUrl}/posts?${queryParams}`, {
+        cache: 'no-store',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`WordPress API error: ${response.status} - ${response.statusText}`);
+      }
+      
+      const journals = await response.json();
+      
+      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
+      const total = parseInt(response.headers.get('X-WP-Total') || '0');
 
-    return { journals, totalPages, total };
+      return { journals, totalPages, total };
+    } catch (error) {
+      console.error('Error fetching journals:', error);
+      // Return empty result instead of throwing
+      return { journals: [], totalPages: 1, total: 0 };
+    }
   }
 
   async getJournal(slug: string): Promise<Journal | null> {
@@ -166,11 +186,16 @@ class WordPressAPI {
   }
 
   async searchJournals(query: string, page = 1, perPage = 10): Promise<{ journals: Journal[], totalPages: number }> {
-    return this.getJournals({
+    const result = await this.getJournals({
       search: query,
       page,
       per_page: perPage
     });
+    
+    return {
+      journals: result.journals,
+      totalPages: result.totalPages
+    };
   }
 
   // Helper method to strip HTML tags
@@ -186,6 +211,17 @@ class WordPressAPI {
     const publisher = journal.meta.journal_publisher || SITE_NAME;
     
     return `${authors} (${year}). ${title}. ${publisher}.`;
+  }
+
+  // Method to test API connection
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.fetchAPI('/posts?per_page=1');
+      return true;
+    } catch (error) {
+      console.error('WordPress API connection test failed:', error);
+      return false;
+    }
   }
 }
 

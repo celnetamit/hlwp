@@ -54,10 +54,16 @@ const collectionPageJsonLd = {
   mainEntity: {
     '@type': 'ItemList',
     name: 'Academic Journal Articles',
-    description: 'Academic research publications'
+    description: 'Academic research publications',
+    numberOfItems: 0 // This should be dynamic based on actual journal count
   },
   provider: {
     '@type': 'Organization',
+    name: SITE_NAME,
+    url: SITE_URL
+  },
+  isPartOf: {
+    '@type': 'WebSite',
     name: SITE_NAME,
     url: SITE_URL
   }

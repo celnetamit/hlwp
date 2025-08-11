@@ -5,7 +5,11 @@ import { Inter } from 'next/font/google'
 import { JsonLd } from './components/JsonLd'
 import Script from 'next/script'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
@@ -187,7 +191,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <JsonLd data={websiteJsonLd} />
         <JsonLd data={organizationJsonLd} />
@@ -270,7 +274,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} antialiased`}>
         {/* Skip to content for accessibility */}
         <a 
           href="#main-content" 

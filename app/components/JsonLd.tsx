@@ -1,3 +1,4 @@
+///home/itb01/journal-library/app/components/JsonLd.tsx
 interface JsonLdProps {
   data: object
 }

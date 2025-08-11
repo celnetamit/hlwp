@@ -1,33 +1,47 @@
-.
-├── app
-│   ├── api
-│   │   └── search
-│   ├── components
+./
+├── all_code.txt
+├── app/
+│   ├── api/
+│   │   ├── route.ts
+│   │   └── search/
+│   ├── article/
+│   │   └── [id]/
+│   │       └── page.tsx
+│   ├── articles/
+│   │   └── page.tsx
+│   ├── components/
+│   │   ├── ArticleViewer.tsx
 │   │   ├── JournalDetail.tsx
 │   │   ├── JournalLibrary.tsx
 │   │   └── JsonLd.tsx
-│   ├── data
+│   ├── data/
 │   │   └── journals.ts
+│   ├── feed.xml/
 │   ├── globals.css
-│   ├── journal
-│   │   ├── [id]
-│   │   │   └── page.tsx
-│   │   └── [slug]
+│   ├── journal/
+│   │   └── [slug]/
 │   │       └── page.tsx
 │   ├── layout.tsx
-│   ├── lib
+│   ├── lib/
 │   │   └── wordpress.ts
 │   ├── page.tsx
 │   ├── robots.ts
+│   ├── search/
+│   │   └── page.tsx
 │   └── sitemap.ts
+├── .env.local
 ├── eslint.config.mjs
+├── feed.xml/
+│   └── route.ts
 ├── file-tree.txt
+├── .gitignore
 ├── next.config.js
 ├── next-env.d.ts
 ├── package.json
 ├── package-lock.json
 ├── postcss.config.mjs
-├── public
+├── project-structure.txt
+├── public/
 │   ├── file.svg
 │   ├── globe.svg
 │   ├── next.svg
@@ -37,4 +51,4 @@
 ├── tailwind.config.js
 └── tsconfig.json
 
-11 directories, 27 files
+16 directories, 36 files

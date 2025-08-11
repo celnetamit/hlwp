@@ -58,6 +58,42 @@ module.exports = {
         'shimmer': 'shimmer 2s infinite',
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
       },
+      keyframes: {
+        fadeInUp: {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+        float: {
+          '0%, 100%': {
+            transform: 'translateY(0px)',
+          },
+          '50%': {
+            transform: 'translateY(-10px)',
+          },
+        },
+        shimmer: {
+          '0%': {
+            backgroundPosition: '-200% 0',
+          },
+          '100%': {
+            backgroundPosition: '200% 0',
+          },
+        },
+        'pulse-glow': {
+          '0%, 100%': {
+            boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)',
+          },
+          '50%': {
+            boxShadow: '0 0 40px rgba(124, 58, 237, 0.6)',
+          },
+        },
+      },
       backdropBlur: {
         xs: '2px',
       },
@@ -71,6 +107,42 @@ module.exports = {
               '&:hover': {
                 color: 'hsl(var(--primary))',
               },
+            },
+            h1: {
+              color: 'hsl(var(--foreground))',
+            },
+            h2: {
+              color: 'hsl(var(--foreground))',
+            },
+            h3: {
+              color: 'hsl(var(--foreground))',
+            },
+            h4: {
+              color: 'hsl(var(--foreground))',
+            },
+            h5: {
+              color: 'hsl(var(--foreground))',
+            },
+            h6: {
+              color: 'hsl(var(--foreground))',
+            },
+            blockquote: {
+              color: 'hsl(var(--muted-foreground))',
+              borderLeftColor: 'hsl(var(--border))',
+            },
+            hr: {
+              borderColor: 'hsl(var(--border))',
+            },
+            code: {
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--muted))',
+            },
+            'pre code': {
+              backgroundColor: 'transparent',
+            },
+            pre: {
+              backgroundColor: 'hsl(var(--muted))',
+              color: 'hsl(var(--foreground))',
             },
           },
         },
