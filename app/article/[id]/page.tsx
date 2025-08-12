@@ -1,4 +1,3 @@
-// app/article/[id]/page.tsx
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { JsonLd } from '../../components/JsonLd'
@@ -23,7 +22,7 @@ interface Article {
   pages?: string
   pdfUrl?: string
   citations?: number
-  references?: string[] // Add this to handle the citations field
+  references?: string[]
   subjects: string[]
   language?: string
   publisher?: string
@@ -46,8 +45,8 @@ async function getArticle(id: string): Promise<Article | null> {
     issue: post.meta.journal_issue,
     pages: post.meta.journal_pages,
     pdfUrl: post.meta.journal_pdf_url,
-    citations: post.meta.journal_citation_count,
-    references: post.meta.journal_citations || [],  // Ensuring this is treated as an array or empty array
+    citations: post.meta.journal_citation_count || 0, // Default to 0 if missing
+    references: post.meta.journal_citations || [], // Fallback to empty array
     subjects: post.meta.journal_keywords || [],
     language: post.meta.journal_language,
     publisher: post.meta.journal_publisher || 'STM Journals',
