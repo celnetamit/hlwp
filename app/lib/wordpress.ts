@@ -1,3 +1,4 @@
+// Define constants for the API and site URLs
 const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://journals.stmjournals.com/wp-json/wp/v2';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
@@ -6,6 +7,7 @@ if (!WORDPRESS_API_URL) {
   console.warn('WORDPRESS_API_URL not found, using default URL');
 }
 
+// Declare the Journal type
 export interface Journal {
   id: number;
   title: { rendered: string };
@@ -59,6 +61,7 @@ export interface Journal {
   };
 }
 
+// Declare the Category and Author types
 export interface Category {
   id: number;
   name: string;
@@ -74,6 +77,7 @@ export interface Author {
   avatar_urls: Record<string, string>;
 }
 
+// Define the WordPressAPI class
 class WordPressAPI {
   private baseUrl: string;
 
@@ -218,6 +222,6 @@ class WordPressAPI {
   }
 }
 
+// Instantiate and export the API client
 export const wpAPI = new WordPressAPI();
-export type { Journal, Category, Author };
 export { SITE_URL, SITE_NAME };
