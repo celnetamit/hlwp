@@ -167,6 +167,24 @@ class WordPressAPI {
     }
   }
 
+  // New helper to get an article by ID or Slug
+  async getArticle(idOrSlug: string): Promise<Journal | null> {
+    if (/^\d+$/.test(idOrSlug)) {
+      const byId = await this.getJournalById(Number(idOrSlug));
+      if (byId) return byId;
+    }
+
+    const bySlug = await this.getJournal(idOrSlug);
+    if (bySlug) return bySlug;
+
+    const maybeId = Number(idOrSlug);
+    if (!Number.isNaN(maybeId)) {
+      return await this.getJournalById(maybeId);
+    }
+
+    return null;
+  }
+
   async getCategories(): Promise<Category[]> {
     try {
       return await this.fetchAPI('/categories');
@@ -226,4 +244,5 @@ class WordPressAPI {
 }
 
 export const wpAPI = new WordPressAPI();
+export type { Journal }; // ensure this type is exported if not already
 export { SITE_URL, SITE_NAME };
