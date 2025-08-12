@@ -1,7 +1,7 @@
 // app/components/JournalLibrary.tsx - Updated with Google Scholar style row layout
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type SyntheticEvent } from 'react';
 import Link from 'next/link';
 import { wpAPI, Journal, Category, SITE_NAME } from '../lib/wordpress';
 
@@ -17,14 +17,12 @@ export default function JournalLibrary() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'modified'>('date');
 
-  // Separate useEffect for initial load
   useEffect(() => {
     fetchInitialData();
   }, []);
 
-  // Separate useEffect for data changes
   useEffect(() => {
-    if (!loading) { // Don't trigger on initial load
+    if (!loading) {
       fetchJournals();
     }
   }, [currentPage, searchQuery, selectedCategory, sortBy]);
@@ -32,20 +30,12 @@ export default function JournalLibrary() {
   const fetchInitialData = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      // Fetch both journals and categories concurrently
       const [journalsResult, categoriesResult] = await Promise.allSettled([
-        wpAPI.getJournals({
-          page: 1,
-          per_page: 20,
-          orderby: 'date',
-          order: 'desc'
-        }),
+        wpAPI.getJournals({ page: 1, per_page: 20, orderby: 'date', order: 'desc' }),
         wpAPI.getCategories()
       ]);
 
-      // Handle journals result
       if (journalsResult.status === 'fulfilled') {
         setJournals(journalsResult.value.journals);
         setTotalPages(journalsResult.value.totalPages);
@@ -55,14 +45,11 @@ export default function JournalLibrary() {
         setError('Failed to load journals');
       }
 
-      // Handle categories result
       if (categoriesResult.status === 'fulfilled') {
         setCategories(categoriesResult.value);
       } else {
         console.error('Error fetching categories:', categoriesResult.reason);
-        // Categories failure is not critical, continue without them
       }
-
     } catch (error) {
       console.error('Critical error during initial data fetch:', error);
       setError('Failed to load journal library');
@@ -73,7 +60,6 @@ export default function JournalLibrary() {
 
   const fetchJournals = async () => {
     setError(null);
-    
     try {
       const result = await wpAPI.getJournals({
         page: currentPage,
@@ -83,7 +69,6 @@ export default function JournalLibrary() {
         orderby: sortBy,
         order: 'desc'
       });
-      
       setJournals(result.journals);
       setTotalPages(result.totalPages);
       setTotalResults(result.total);
@@ -96,7 +81,7 @@ export default function JournalLibrary() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    if (loading) return; // Prevent search during initial load
+    if (loading) return;
     fetchJournals();
   };
 
@@ -116,7 +101,7 @@ export default function JournalLibrary() {
         month: 'short',
         day: 'numeric'
       });
-    } catch (error) {
+    } catch {
       return 'Invalid date';
     }
   };
@@ -131,20 +116,11 @@ export default function JournalLibrary() {
     return html.replace(/<[^>]*>/g, '');
   };
 
-  const getJournalUrl = (journal: Journal) => {
-    return `/journal/${journal.slug}`;
-  };
+  const getJournalUrl = (journal: Journal) => `/journal/${journal.slug}`;
 
-  const getJournalInitials = (title: string) => {
-    return title
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .substring(0, 3)
-      .toUpperCase();
-  };
+  const getJournalInitials = (title: string) =>
+    title.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
 
-  // Error state
   if (error && journals.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -307,9 +283,13 @@ export default function JournalLibrary() {
                         src={journal._embedded['wp:featuredmedia'][0].source_url}
                         alt={title}
                         className="w-full h-full object-cover rounded-md"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling!.style.display = 'flex';
+                        onError={(e: SyntheticEvent<HTMLImageElement>) => {
+                          const img = e.currentTarget;
+                          img.style.display = 'none';
+                          const sib = img.nextElementSibling;
+                          if (sib instanceof HTMLElement) {
+                            sib.style.display = 'flex';
+                          }
                         }}
                       />
                     ) : null}
@@ -387,7 +367,7 @@ export default function JournalLibrary() {
                       </div>
                     )}
 
-                    {/* PDF Download Link */}
+                    {/* PDF Download Link (kept here; tell me if you want it removed as well) */}
                     {journal.meta?.journal_pdf_url && (
                       <div className="mt-3">
                         <a 
@@ -440,7 +420,6 @@ export default function JournalLibrary() {
               {Array.from({ length: Math.min(10, totalPages) }, (_, i) => {
                 const page = Math.max(1, Math.min(totalPages - 9, currentPage - 5)) + i;
                 if (page > totalPages) return null;
-                
                 return (
                   <button
                     key={page}
