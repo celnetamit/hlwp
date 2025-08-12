@@ -33,6 +33,7 @@ async function getArticle(id: string): Promise<Article | null> {
   const post = await wpAPI.getArticle(id);
   if (!post) return null;
 
+  // Ensure properties like journal_citations and others are safely accessed
   return {
     id: post.id.toString(),
     title: post.title.rendered,
@@ -45,8 +46,8 @@ async function getArticle(id: string): Promise<Article | null> {
     issue: post.meta.journal_issue,
     pages: post.meta.journal_pages,
     pdfUrl: post.meta.journal_pdf_url,
-    citations: post.meta.journal_citation_count ?? 0, // Use nullish coalescing to default to 0 if missing
-    references: post.meta.journal_citations ?? [], // Ensure it's always an array, even if missing
+    citations: post.meta.journal_citation_count ?? 0,  // Use nullish coalescing to default to 0 if missing
+    references: post.meta.journal_citations ?? [],    // Use an empty array if citations are missing
     subjects: post.meta.journal_keywords || [],
     language: post.meta.journal_language,
     publisher: post.meta.journal_publisher || 'STM Journals',
