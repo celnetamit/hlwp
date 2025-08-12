@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress'; 
+import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
 import { JsonLd } from '../../components/JsonLd';
 import JournalDetail from '../../components/JournalDetail';
 
@@ -10,8 +10,8 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const journal: Journal = await wpAPI.getJournal(params.slug); // Ensure type is Journal
-    
+    const journal: Journal | null = await wpAPI.getJournal(params.slug); // Allow null here
+
     if (!journal) {
       return {
         title: 'Journal Not Found',
@@ -61,7 +61,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: journal._embedded?.['wp:featuredmedia']?.[0]?.source_url
       },
       other: {
-        // Google Scholar specific meta tags
         'citation_title': title,
         'citation_author': authors,
         'citation_publication_date': publishDate,
@@ -77,7 +76,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ...(doi && { 'citation_doi': doi }),
         ...(journal.meta.journal_issn && { 'citation_issn': journal.meta.journal_issn }),
 
-        // Dublin Core meta tags
         'dc.title': title,
         'dc.creator': authors,
         'dc.publisher': publisher,
@@ -89,7 +87,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'dc.description': description,
         'dc.subject': journal.meta.journal_keywords?.join(', ') || '',
 
-        // Additional scholarly meta tags
         'prism.publicationName': publisher,
         'prism.publicationDate': publishDate,
         'prism.volume': journal.meta.journal_volume || '',
@@ -98,7 +95,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'prism.endingPage': journal.meta.journal_pages?.split('-')[1] || '',
         'prism.doi': doi || '',
 
-        // Highwire Press meta tags
         'hw.title': title,
         'hw.author': authors,
         'hw.journal': publisher,
@@ -121,13 +117,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function JournalPage({ params }: Props) {
   try {
-    const journal: Journal = await wpAPI.getJournal(params.slug); // Ensure the type is Journal
+    const journal: Journal | null = await wpAPI.getJournal(params.slug); // Ensure handling null
     
     if (!journal) {
       notFound();
     }
 
-    // Generate structured data for the journal article
     const journalJsonLd = {
       '@context': 'https://schema.org',
       '@type': 'ScholarlyArticle',
@@ -177,7 +172,6 @@ export default async function JournalPage({ params }: Props) {
       })
     };
 
-    // Breadcrumb structured data
     const breadcrumbJsonLd = {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
