@@ -3,7 +3,6 @@ const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://publications
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
 
-// Optional: Add validation with better error handling
 if (!WORDPRESS_API_URL) {
   console.warn('WORDPRESS_API_URL not found, using default URL');
 }
@@ -61,23 +60,7 @@ export interface Journal {
   };
 }
 
-export interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  count: number;
-}
-
-export interface Author {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  avatar_urls: Record<string, string>;
-}
-
-class WordPressAPI {
+export class WordPressAPI {
   private baseUrl: string;
 
   constructor() {
@@ -86,14 +69,13 @@ class WordPressAPI {
 
   private async fetchAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
-    
     try {
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
-        cache: 'no-store', // Ensure fresh data
+        cache: 'no-store',
         ...options,
       });
 
@@ -105,27 +87,6 @@ class WordPressAPI {
     } catch (error) {
       console.error(`Error fetching from ${url}:`, error);
       throw error;
-    }
-  }
-
-  // New method to get an article by ID or Slug
-  async getArticle(idOrSlug: string): Promise<Journal | null> {
-    // Check if it's a number or a slug (string)
-    const isNumeric = /^\d+$/.test(idOrSlug);
-
-    let endpoint = '';
-    if (isNumeric) {
-      endpoint = `/posts/${idOrSlug}?_embed=true`;
-    } else {
-      endpoint = `/posts?slug=${idOrSlug}&_embed=true`;
-    }
-
-    try {
-      const articles = await this.fetchAPI(endpoint);
-      return articles[0] || null;
-    } catch (error) {
-      console.error('Error fetching article:', error);
-      return null;
     }
   }
 
@@ -151,20 +112,19 @@ class WordPressAPI {
       const response = await fetch(`${this.baseUrl}/posts?${queryParams}`, {
         cache: 'no-store',
       });
-      
+
       if (!response.ok) {
         throw new Error(`WordPress API error: ${response.status} - ${response.statusText}`);
       }
-      
+
       const journals = await response.json();
-      
+
       const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
       const total = parseInt(response.headers.get('X-WP-Total') || '0');
 
       return { journals, totalPages, total };
     } catch (error) {
       console.error('Error fetching journals:', error);
-      // Return empty result instead of throwing
       return { journals: [], totalPages: 1, total: 0 };
     }
   }
@@ -179,33 +139,45 @@ class WordPressAPI {
     }
   }
 
-  // Helper method to strip HTML tags
-  stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, '');
-  }
-
-  // Helper method to generate citation
-  generateCitation(journal: Journal): string {
-    const authors = journal.meta.journal_authors?.join(', ') || 'Unknown Author';
-    const title = this.stripHtml(journal.title.rendered);
-    const year = journal.meta.journal_year || new Date(journal.date).getFullYear().toString();
-    const publisher = journal.meta.journal_publisher || SITE_NAME;
-    
-    return `${authors} (${year}). ${title}. ${publisher}.`;
-  }
-
-  // Method to test API connection
-  async testConnection(): Promise<boolean> {
+  async getJournalById(id: number): Promise<Journal | null> {
     try {
-      await this.fetchAPI('/posts?per_page=1');
-      return true;
+      return await this.fetchAPI(`/posts/${id}?_embed=true`);
     } catch (error) {
-      console.error('WordPress API connection test failed:', error);
-      return false;
+      console.error('Error fetching journal by ID:', error);
+      return null;
+    }
+  }
+
+  // New helper to get an article by ID or Slug
+  async getArticle(idOrSlug: string): Promise<Journal | null> {
+    if (/^\d+$/.test(idOrSlug)) {
+      const byId = await this.getJournalById(Number(idOrSlug));
+      if (byId) return byId;
+    }
+
+    const bySlug = await this.getJournal(idOrSlug);
+    if (bySlug) return bySlug;
+
+    return null;
+  }
+
+  async getCategories(): Promise<Category[]> {
+    try {
+      return await this.fetchAPI('/categories');
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      return [];
+    }
+  }
+
+  async getAuthors(): Promise<Author[]> {
+    try {
+      return await this.fetchAPI('/users');
+    } catch (error) {
+      console.error('Error fetching authors:', error);
+      return [];
     }
   }
 }
 
 export const wpAPI = new WordPressAPI();
-export type { Journal };
-export { SITE_URL, SITE_NAME };
