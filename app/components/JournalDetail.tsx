@@ -1,9 +1,7 @@
-// app/components/JournalDetail.tsx
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Journal } from '../lib/wordpress';
 
 interface JournalDetailProps {
@@ -33,6 +31,8 @@ export default function JournalDetail({ journal }: JournalDetailProps) {
   const title = stripHtml(journal.title.rendered);
   const abstract = journal.meta.journal_abstract || stripHtml(journal.excerpt?.rendered || '');
   const content = stripHtml(journal.content?.rendered || '');
+  const citationCount = journal.meta.journal_citation_count || 0;
+  const citations = journal.meta.journal_citations || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -247,7 +247,7 @@ export default function JournalDetail({ journal }: JournalDetailProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">
-                      {journal.meta?.journal_citation_count || '0'}
+                      {citationCount}
                     </div>
                     <div className="text-sm text-gray-600">Citations</div>
                   </div>
