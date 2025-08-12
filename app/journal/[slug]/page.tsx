@@ -1,3 +1,4 @@
+// app/journal/[slug]/page.tsx
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
@@ -10,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const journal: Journal | null = await wpAPI.getJournal(params.slug); // Allow null here
+    const journal: Journal | null = await wpAPI.getJournal(params.slug); // Handle null
 
     if (!journal) {
       return {
@@ -117,7 +118,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function JournalPage({ params }: Props) {
   try {
-    const journal: Journal | null = await wpAPI.getJournal(params.slug); // Ensure handling null
+    const journal: Journal | null = await wpAPI.getJournal(params.slug); // Handle null
     
     if (!journal) {
       notFound();
