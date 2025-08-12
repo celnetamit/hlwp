@@ -1,5 +1,5 @@
 // lib/wordpress.ts - WordPress API service
-const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://journals.stmjournals.com/wp-json/wp/v2';
+const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://publications.stmjournals.com/wp-json/wp/v2';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
 
@@ -33,7 +33,6 @@ export interface Journal {
     journal_abstract?: string;
     journal_pdf_url?: string;
     journal_citation_count?: number;
-    journal_citations?: string[];  // Optional citations field
   };
   _embedded?: {
     author: Array<{
@@ -109,6 +108,27 @@ class WordPressAPI {
     }
   }
 
+  // New method to get an article by ID or Slug
+  async getArticle(idOrSlug: string): Promise<Journal | null> {
+    // Check if it's a number or a slug (string)
+    const isNumeric = /^\d+$/.test(idOrSlug);
+
+    let endpoint = '';
+    if (isNumeric) {
+      endpoint = `/posts/${idOrSlug}?_embed=true`;
+    } else {
+      endpoint = `/posts?slug=${idOrSlug}&_embed=true`;
+    }
+
+    try {
+      const articles = await this.fetchAPI(endpoint);
+      return articles[0] || null;
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      return null;
+    }
+  }
+
   async getJournals(params: {
     page?: number;
     per_page?: number;
@@ -144,7 +164,8 @@ class WordPressAPI {
       return { journals, totalPages, total };
     } catch (error) {
       console.error('Error fetching journals:', error);
-      return { journals: [], totalPages: 1, total: 0 };  // Gracefully handle missing data
+      // Return empty result instead of throwing
+      return { journals: [], totalPages: 1, total: 0 };
     }
   }
 
@@ -158,13 +179,9 @@ class WordPressAPI {
     }
   }
 
-  async getCategories(): Promise<Category[]> {
-    try {
-      return await this.fetchAPI('/categories');
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      return [];
-    }
+  // Helper method to strip HTML tags
+  stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, '');
   }
 
   // Helper method to generate citation
