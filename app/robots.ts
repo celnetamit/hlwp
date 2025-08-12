@@ -34,7 +34,7 @@ export default function robots(): MetadataRoute.Robots {
     '/_next/',
     '/private/',
     '/temp/',
-    '/*.json,
+    '/*.json', // ✅ fixed missing closing quote
     '/search?*',
     ...(process.env.BLOCK_DRAFTS === 'true' ? ['/drafts/', '/preview/'] : []),
     ...(process.env.BLOCK_USER_CONTENT === 'true' ? ['/user/', '/profile/'] : []),
