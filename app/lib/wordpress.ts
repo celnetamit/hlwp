@@ -102,6 +102,7 @@ class WordPressAPI {
     };
   }
 
+  // Helper function to handle pagination correctly
   private async fetchAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     try {
@@ -122,7 +123,7 @@ class WordPressAPI {
     }
   }
 
-  // Fetch a list of journals
+  // Fetch a list of journals with pagination support
   async getJournals(params: {
     page?: number;
     per_page?: number;
@@ -132,19 +133,18 @@ class WordPressAPI {
     order?: 'asc' | 'desc';
   } = {}): Promise<{ journals: Journal[], totalPages: number, total: number }> {
     const queryParams = new URLSearchParams({
-      _embed: 'true',
-      per_page: (params.per_page || 10).toString(),
-      page: (params.page || 1).toString(),
-      orderby: params.orderby || 'date',
-      order: params.order || 'desc',
-      ...(params.search && { search: params.search }),
-      ...(params.categories && { categories: params.categories }),
+      _embed: 'true',  // Get embedded data (e.g., author, featured media)
+      per_page: (params.per_page || 10).toString(), // Default per_page to 10
+      page: (params.page || 1).toString(),  // Default page to 1
+      orderby: params.orderby || 'date',  // Default orderby to date
+      order: params.order || 'desc',  // Default order to descending
+      ...(params.search && { search: params.search }),  // Search term
+      ...(params.categories && { categories: params.categories }),  // Categories filter
     });
 
     try {
       const response = await fetch(`${this.baseUrl}/posts?${queryParams}`, {
-        cache: 'no-store',
-        headers: this.getAuthHeaders(),  // Add Authorization header here
+        headers: this.getAuthHeaders(),  // Include authorization header
       });
 
       if (!response.ok) {
@@ -152,9 +152,8 @@ class WordPressAPI {
       }
 
       const journals = await response.json();
-
-      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
-      const total = parseInt(response.headers.get('X-WP-Total') || '0');
+      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');  // Extract total pages
+      const total = parseInt(response.headers.get('X-WP-Total') || '0');  // Extract total count of posts
 
       return { journals, totalPages, total };
     } catch (error) {
@@ -163,7 +162,7 @@ class WordPressAPI {
     }
   }
 
-  // Fetch a journal by slug
+  // Fetch a journal by its slug
   async getJournal(slug: string): Promise<Journal | null> {
     try {
       const journals = await this.fetchAPI(`/posts?slug=${slug}&_embed=true`);
