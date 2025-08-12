@@ -23,7 +23,7 @@ interface Article {
   pages?: string
   pdfUrl?: string
   citations?: number
-  references?: string[]
+  references?: string[] // Add this to handle the citations field
   subjects: string[]
   language?: string
   publisher?: string
@@ -47,7 +47,7 @@ async function getArticle(id: string): Promise<Article | null> {
     pages: post.meta.journal_pages,
     pdfUrl: post.meta.journal_pdf_url,
     citations: post.meta.journal_citation_count,
-    references: post.meta.journal_citations,
+    references: post.meta.journal_citations || [],  // Ensuring this is treated as an array or empty array
     subjects: post.meta.journal_keywords || [],
     language: post.meta.journal_language,
     publisher: post.meta.journal_publisher || 'STM Journals',
