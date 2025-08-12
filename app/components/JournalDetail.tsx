@@ -2,48 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { wpAPI, Journal } from '../lib/wordpress';  // Make sure to import Journal here
+import { wpAPI } from '../lib/wordpress';
+import { Journal } from '../lib/wordpress'; // Ensure this import is present
 
 interface JournalDetailProps {
-  journalSlug: string; // Expected to receive slug or id as a prop
+  journal: Journal; // Accept journal as a prop
 }
 
-export default function JournalDetail({ journalSlug }: JournalDetailProps) {
-  const [journal, setJournal] = useState<Journal | null>(null); // Ensure that the state type is correctly set
-  const [loading, setLoading] = useState(true); // State to manage loading state
-  const [error, setError] = useState<string | null>(null); // State to handle errors
-  const [activeTab, setActiveTab] = useState<'abstract' | 'fulltext' | 'details'>('abstract'); // Tab state
-
-  // Fetch the journal data based on slug or ID
-  useEffect(() => {
-    const fetchJournal = async () => {
-      try {
-        const article = await wpAPI.getArticle(journalSlug);
-        if (article) {
-          setJournal(article); // Set the journal data if available
-        } else {
-          setError('Journal not found'); // Set error if article is not found
-        }
-      } catch (err) {
-        setError('Failed to fetch journal'); // Set error if the fetch fails
-      } finally {
-        setLoading(false); // Set loading to false once the fetch operation is completed
-      }
-    };
-
-    fetchJournal(); // Call the function to fetch the journal data
-  }, [journalSlug]); // Run effect when journalSlug changes
-
-  // If still loading, show a loading message
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  // If there is an error or no journal data, show an error message
-  if (error || !journal) {
-    return <div>{error || 'Journal not found'}</div>;
-  }
-
+export default function JournalDetail({ journal }: JournalDetailProps) {
   // Extracting properties from the journal
   const title = journal.title.rendered; // Journal title
   const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author'; // Authors
