@@ -1,4 +1,4 @@
-// app/components/JournalLibrary.tsx - Updated with Google Scholar style row layout
+// app/components/JournalLibrary.tsx
 'use client';
 
 import { useState, useEffect, type SyntheticEvent } from 'react';
@@ -22,7 +22,6 @@ export default function JournalLibrary() {
     fetchInitialData();
   }, []);
 
-  // Refetch on controls change
   useEffect(() => {
     if (!loading) {
       fetchJournals();
@@ -123,7 +122,6 @@ export default function JournalLibrary() {
   const getJournalInitials = (title: string) =>
     title.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
 
-  // Error state (no data)
   if (error && journals.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -132,8 +130,7 @@ export default function JournalLibrary() {
             <div className="text-center">
               <h1 className="text-5xl font-bold mb-4">Journal Library</h1>
               <p className="text-xl mb-8 max-w-3xl mx-auto">
-                Discover comprehensive academic journals and research papers 
-                across multiple disciplines and cutting-edge research areas.
+                Discover comprehensive academic journals and research papers across multiple disciplines and cutting-edge research areas.
               </p>
             </div>
           </div>
@@ -164,10 +161,8 @@ export default function JournalLibrary() {
           <div className="text-center">
             <h1 className="text-5xl font-bold mb-4">Journal Library</h1>
             <p className="text-xl mb-8 max-w-3xl mx-auto">
-              Discover comprehensive academic journals and research papers 
-              across multiple disciplines and cutting-edge research areas.
+              Discover comprehensive academic journals and research papers across multiple disciplines and cutting-edge research areas.
             </p>
-            
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="max-w-4xl mx-auto">
               <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg p-2 shadow-lg">
@@ -203,7 +198,7 @@ export default function JournalLibrary() {
         </div>
       </div>
 
-      {/* Search Results Header - Google Scholar Style */}
+      {/* Search Results Header */}
       <div className="search-header">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -233,23 +228,6 @@ export default function JournalLibrary() {
         </div>
       </div>
 
-      {/* Error message for subsequent requests */}
-      {error && journals.length > 0 && (
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <span className="text-red-800">{error}</span>
-              <button
-                onClick={handleRetry}
-                className="text-red-600 hover:text-red-800 font-semibold text-sm"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Loading State */}
       {loading ? (
         <div className="journal-list">
@@ -267,7 +245,7 @@ export default function JournalLibrary() {
         </div>
       ) : (
         <>
-          {/* Journal List - Google Scholar Style Row Layout */}
+          {/* Journal List */}
           <div className="journal-list">
             {journals.map((journal) => {
               const title = stripHtml(journal.title.rendered);
@@ -276,10 +254,9 @@ export default function JournalLibrary() {
               const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString();
               const publisher = journal.meta?.journal_publisher || '';
               const doi = journal.meta?.journal_doi;
-              
+
               return (
                 <article key={journal.id} className="journal-card animate-fade-in-up">
-                  {/* Journal Icon/Thumbnail */}
                   <div className="journal-thumbnail">
                     {journal._embedded?.['wp:featuredmedia']?.[0] ? (
                       <img
@@ -300,17 +277,12 @@ export default function JournalLibrary() {
                       {getJournalInitials(title)}
                     </div>
                   </div>
-
-                  {/* Main Content */}
                   <div className="journal-content">
-                    {/* Title */}
                     <h2 className="journal-title">
                       <Link href={getJournalUrl(journal)}>
                         {title}
                       </Link>
                     </h2>
-
-                    {/* URL/Publisher Line */}
                     <div className="journal-url">
                       {publisher && `${publisher} • `}
                       {year}
@@ -328,13 +300,9 @@ export default function JournalLibrary() {
                         </>
                       )}
                     </div>
-
-                    {/* Description/Abstract */}
                     <p className="journal-description">
                       {excerpt}
                     </p>
-
-                    {/* Metadata */}
                     <div className="journal-meta">
                       <span className="journal-author">
                         <strong>Authors:</strong> {authors}
@@ -354,8 +322,6 @@ export default function JournalLibrary() {
                         </span>
                       )}
                     </div>
-
-                    {/* Keywords/Categories */}
                     {(journal.meta?.journal_keywords || journal._embedded?.['wp:term']?.[0]) && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {journal.meta?.journal_keywords?.slice(0, 4).map((keyword, index) => (
@@ -369,8 +335,6 @@ export default function JournalLibrary() {
                         ))}
                       </div>
                     )}
-
-                    {/* PDF link intentionally removed from list view */}
                   </div>
                 </article>
               );
@@ -394,7 +358,7 @@ export default function JournalLibrary() {
             </div>
           )}
 
-          {/* Pagination - Google Style */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="pagination">
               <button
@@ -404,7 +368,6 @@ export default function JournalLibrary() {
               >
                 Previous
               </button>
-              
               {Array.from({ length: Math.min(10, totalPages) }, (_, i) => {
                 const page = Math.max(1, Math.min(totalPages - 9, currentPage - 5)) + i;
                 if (page > totalPages) return null;
@@ -418,7 +381,6 @@ export default function JournalLibrary() {
                   </button>
                 );
               })}
-              
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
