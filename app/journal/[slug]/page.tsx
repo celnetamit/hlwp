@@ -1,16 +1,16 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
-import { JsonLd } from '../../../../components/JsonLd';
-import JournalDetail from '../../../../components/JournalDetail';  // JournalDetail is imported properly
+import { JsonLd } from '../../../components/JsonLd'; // Corrected path
+import JournalDetail from '../../../components/JournalDetail'; // Corrected path
 
 interface Props {
-  params: { slug: string };  // Capture slug from URL params
+  params: { slug: string }; // Capture slug from URL params
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const journal = await wpAPI.getJournal(params.slug);  // Fetch journal by slug
+    const journal = await wpAPI.getJournal(params.slug); // Fetch journal by slug
 
     if (!journal) {
       return {
