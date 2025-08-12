@@ -17,10 +17,12 @@ export default function JournalLibrary() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'modified'>('date');
 
+  // Initial load
   useEffect(() => {
     fetchInitialData();
   }, []);
 
+  // Refetch on controls change
   useEffect(() => {
     if (!loading) {
       fetchJournals();
@@ -50,8 +52,8 @@ export default function JournalLibrary() {
       } else {
         console.error('Error fetching categories:', categoriesResult.reason);
       }
-    } catch (error) {
-      console.error('Critical error during initial data fetch:', error);
+    } catch (err) {
+      console.error('Critical error during initial data fetch:', err);
       setError('Failed to load journal library');
     } finally {
       setLoading(false);
@@ -72,8 +74,8 @@ export default function JournalLibrary() {
       setJournals(result.journals);
       setTotalPages(result.totalPages);
       setTotalResults(result.total);
-    } catch (error) {
-      console.error('Error fetching journals:', error);
+    } catch (err) {
+      console.error('Error fetching journals:', err);
       setError('Failed to fetch journals. Please try again.');
     }
   };
@@ -121,6 +123,7 @@ export default function JournalLibrary() {
   const getJournalInitials = (title: string) =>
     title.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
 
+  // Error state (no data)
   if (error && journals.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -367,22 +370,7 @@ export default function JournalLibrary() {
                       </div>
                     )}
 
-                    {/* PDF Download Link (kept here; tell me if you want it removed as well) */}
-                    {journal.meta?.journal_pdf_url && (
-                      <div className="mt-3">
-                        <a 
-                          href={journal.meta.journal_pdf_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center"
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                          [PDF] Download Full Text
-                        </a>
-                      </div>
-                    )}
+                    {/* PDF link intentionally removed from list view */}
                   </div>
                 </article>
               );
