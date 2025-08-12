@@ -33,6 +33,7 @@ export interface Journal {
     journal_abstract?: string;
     journal_pdf_url?: string;
     journal_citation_count?: number;
+    journal_citations?: string[];  // Optional citations field
   };
   _embedded?: {
     author: Array<{
@@ -143,8 +144,7 @@ class WordPressAPI {
       return { journals, totalPages, total };
     } catch (error) {
       console.error('Error fetching journals:', error);
-      // Return empty result instead of throwing
-      return { journals: [], totalPages: 1, total: 0 };
+      return { journals: [], totalPages: 1, total: 0 };  // Gracefully handle missing data
     }
   }
 
@@ -158,33 +158,6 @@ class WordPressAPI {
     }
   }
 
-  async getJournalById(id: number): Promise<Journal | null> {
-    try {
-      return await this.fetchAPI(`/posts/${id}?_embed=true`);
-    } catch (error) {
-      console.error('Error fetching journal by ID:', error);
-      return null;
-    }
-  }
-
-  // New helper to get an article by ID or Slug
-  async getArticle(idOrSlug: string): Promise<Journal | null> {
-    if (/^\d+$/.test(idOrSlug)) {
-      const byId = await this.getJournalById(Number(idOrSlug));
-      if (byId) return byId;
-    }
-
-    const bySlug = await this.getJournal(idOrSlug);
-    if (bySlug) return bySlug;
-
-    const maybeId = Number(idOrSlug);
-    if (!Number.isNaN(maybeId)) {
-      return await this.getJournalById(maybeId);
-    }
-
-    return null;
-  }
-
   async getCategories(): Promise<Category[]> {
     try {
       return await this.fetchAPI('/categories');
@@ -192,33 +165,6 @@ class WordPressAPI {
       console.error('Error fetching categories:', error);
       return [];
     }
-  }
-
-  async getAuthors(): Promise<Author[]> {
-    try {
-      return await this.fetchAPI('/users');
-    } catch (error) {
-      console.error('Error fetching authors:', error);
-      return [];
-    }
-  }
-
-  async searchJournals(query: string, page = 1, perPage = 10): Promise<{ journals: Journal[], totalPages: number }> {
-    const result = await this.getJournals({
-      search: query,
-      page,
-      per_page: perPage
-    });
-    
-    return {
-      journals: result.journals,
-      totalPages: result.totalPages
-    };
-  }
-
-  // Helper method to strip HTML tags
-  stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, '');
   }
 
   // Helper method to generate citation
@@ -244,5 +190,5 @@ class WordPressAPI {
 }
 
 export const wpAPI = new WordPressAPI();
-export type { Journal }; // ensure this type is exported if not already
+export type { Journal };
 export { SITE_URL, SITE_NAME };
