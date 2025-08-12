@@ -186,3 +186,5 @@ export class WordPressAPI {
 }
 
 export const wpAPI = new WordPressAPI();
+export { SITE_URL, SITE_NAME }; // Make sure SITE_NAME is exported
+export type { Journal };
