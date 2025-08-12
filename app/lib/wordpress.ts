@@ -3,6 +3,9 @@ const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://journals.stm
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
 
+const WORDPRESS_USERNAME = process.env.WORDPRESS_USERNAME || 'your_username';  // Add your WordPress username here
+const WORDPRESS_PASSWORD = process.env.WORDPRESS_PASSWORD || 'your_password';  // Add your WordPress password here
+
 if (!WORDPRESS_API_URL) {
   console.warn('WORDPRESS_API_URL not found, using default URL');
 }
@@ -90,14 +93,20 @@ class WordPressAPI {
     return html.replace(/<[^>]*>/g, ''); // Regular expression to remove HTML tags
   }
 
+  // Method to add Authorization header to each API request
+  private getAuthHeaders() {
+    const authHeader = 'Basic ' + Buffer.from(`${WORDPRESS_USERNAME}:${WORDPRESS_PASSWORD}`).toString('base64');
+    return {
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
+    };
+  }
+
   private async fetchAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     try {
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers: this.getAuthHeaders(),  // Add Authorization header here
         cache: 'no-store',
         ...options,
       });
@@ -134,6 +143,7 @@ class WordPressAPI {
     try {
       const response = await fetch(`${this.baseUrl}/posts?${queryParams}`, {
         cache: 'no-store',
+        headers: this.getAuthHeaders(),  // Add Authorization header here
       });
 
       if (!response.ok) {
