@@ -32,7 +32,7 @@ interface Article {
 async function getArticle(id: string): Promise<Article | null> {
   const post = await wpAPI.getArticle(id);
   if (!post) return null;
-  
+
   return {
     id: post.id.toString(),
     title: post.title.rendered,
@@ -46,7 +46,7 @@ async function getArticle(id: string): Promise<Article | null> {
     pages: post.meta.journal_pages,
     pdfUrl: post.meta.journal_pdf_url,
     citations: post.meta.journal_citation_count || 0, // Default to 0 if missing
-    references: post.meta.journal_citations || [], // Fallback to empty array
+    references: post.meta.journal_citations || [], // Fallback to empty array if missing
     subjects: post.meta.journal_keywords || [],
     language: post.meta.journal_language,
     publisher: post.meta.journal_publisher || 'STM Journals',
