@@ -1,4 +1,3 @@
-// lib/wordpress.ts - WordPress API service
 const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://journals.stmjournals.com/wp-json/wp/v2';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
@@ -58,6 +57,13 @@ export interface Journal {
       slug: string;
     }>>;
   };
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  count: number; // Number of posts in this category
 }
 
 export class WordPressAPI {
@@ -148,7 +154,6 @@ export class WordPressAPI {
     }
   }
 
-  // New helper to get an article by ID or Slug
   async getArticle(idOrSlug: string): Promise<Journal | null> {
     if (/^\d+$/.test(idOrSlug)) {
       const byId = await this.getJournalById(Number(idOrSlug));
