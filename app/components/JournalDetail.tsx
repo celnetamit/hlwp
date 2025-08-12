@@ -2,16 +2,60 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { wpAPI } from '../lib/wordpress';
+import { wpAPI, Journal } from '../lib/wordpress';  // Make sure to import Journal here
 
 interface JournalDetailProps {
-  journal: Journal; // Accept journal as a prop
+  journalSlug: string; // Expected to receive slug or id as a prop
 }
 
-export default function JournalDetail({ journal }: JournalDetailProps) {
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
+export default function JournalDetail({ journalSlug }: JournalDetailProps) {
+  const [journal, setJournal] = useState<Journal | null>(null); // Ensure that the state type is correctly set
+  const [loading, setLoading] = useState(true); // State to manage loading state
+  const [error, setError] = useState<string | null>(null); // State to handle errors
   const [activeTab, setActiveTab] = useState<'abstract' | 'fulltext' | 'details'>('abstract'); // Tab state
+
+  // Fetch the journal data based on slug or ID
+  useEffect(() => {
+    const fetchJournal = async () => {
+      try {
+        const article = await wpAPI.getArticle(journalSlug);
+        if (article) {
+          setJournal(article); // Set the journal data if available
+        } else {
+          setError('Journal not found'); // Set error if article is not found
+        }
+      } catch (err) {
+        setError('Failed to fetch journal'); // Set error if the fetch fails
+      } finally {
+        setLoading(false); // Set loading to false once the fetch operation is completed
+      }
+    };
+
+    fetchJournal(); // Call the function to fetch the journal data
+  }, [journalSlug]); // Run effect when journalSlug changes
+
+  // If still loading, show a loading message
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // If there is an error or no journal data, show an error message
+  if (error || !journal) {
+    return <div>{error || 'Journal not found'}</div>;
+  }
+
+  // Extracting properties from the journal
+  const title = journal.title.rendered; // Journal title
+  const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author'; // Authors
+  const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString(); // Publication year
+  const content = journal.content.rendered; // Full text content
+  const abstract = journal.meta?.journal_abstract || 'No abstract available'; // Abstract
+  const publisher = journal.meta?.journal_publisher || ''; // Publisher
+  const doi = journal.meta?.journal_doi; // DOI
+  const issn = journal.meta?.journal_issn; // ISSN
+  const volume = journal.meta?.journal_volume; // Volume
+  const issue = journal.meta?.journal_issue; // Issue
+  const pages = journal.meta?.journal_pages; // Pages
 
   const formatDate = (dateString: string) => {
     try {
@@ -25,22 +69,10 @@ export default function JournalDetail({ journal }: JournalDetailProps) {
     }
   };
 
-  // Extracting journal data
-  const title = journal.title.rendered;
-  const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author';
-  const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString();
-  const content = journal.content.rendered;
-  const abstract = journal.meta?.journal_abstract || 'No abstract available';
-  const publisher = journal.meta?.journal_publisher || '';
-  const doi = journal.meta?.journal_doi;
-  const issn = journal.meta?.journal_issn;
-  const volume = journal.meta?.journal_volume;
-  const issue = journal.meta?.journal_issue;
-  const pages = journal.meta?.journal_pages;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Journal Title */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">{title}</h1>
 
         {/* Authors */}
@@ -121,7 +153,7 @@ export default function JournalDetail({ journal }: JournalDetailProps) {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons (PDF, Save, Cite) */}
         <div className="flex flex-wrap gap-4 mb-8">
           {journal.meta?.journal_pdf_url && (
             <a
