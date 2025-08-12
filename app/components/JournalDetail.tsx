@@ -1,194 +1,227 @@
-'use client';
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
+import { JsonLd } from '../../components/JsonLd';
+import JournalDetail from '../../components/JournalDetail';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { wpAPI } from '../lib/wordpress';
-import { Journal } from '../lib/wordpress'; // Ensure this import is present
+interface Props {
+  params: { slug: string };
+}
 
-export default function JournalDetail() {
-  const router = useRouter();
-  const { slug } = router.query;  // Extract the slug from the URL
-  const [journal, setJournal] = useState<Journal | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  try {
+    const journal = await wpAPI.getJournal(params.slug);
 
-  useEffect(() => {
-    if (!slug) return; // If no slug, do nothing
+    if (!journal) {
+      return {
+        title: 'Journal Not Found',
+        description: 'The requested journal could not be found.',
+      };
+    }
 
-    const fetchJournal = async () => {
-      try {
-        const journalData = await wpAPI.getJournal(slug as string);  // Fetch journal by slug
-        setJournal(journalData);  // Set the journal data
-      } catch (error) {
-        setError('Failed to load journal details');
-      } finally {
-        setLoading(false);  // Stop loading
-      }
+    const title = wpAPI.stripHtml(journal.title.rendered);
+    const description = wpAPI.stripHtml(journal.excerpt.rendered).substring(0, 160);
+    const authors = journal.meta.journal_authors?.join(', ') || 'Unknown Author';
+    const publishDate = journal.meta.journal_year || new Date(journal.date).getFullYear().toString();
+    const doi = journal.meta.journal_doi;
+    const publisher = journal.meta.journal_publisher || 'Journal Library';
+
+    return {
+      title: `${title} | ${SITE_NAME}`,
+      description: description,
+      keywords: [
+        ...journal.meta.journal_keywords || [],
+        'academic journals',
+        'research papers',
+        'scholarly articles',
+        'peer review',
+      ],
+      authors: journal.meta.journal_authors?.map((author) => ({ name: author })) || [{ name: 'Unknown Author' }],
+      publisher: publisher,
+      openGraph: {
+        title: title,
+        description: description,
+        type: 'article',
+        publishedTime: journal.date,
+        modifiedTime: journal.modified,
+        authors: journal.meta.journal_authors || [],
+        section: 'Academic Research',
+        url: `${SITE_URL}/journal/${journal.slug}`,
+        images: journal._embedded?.['wp:featuredmedia']?.[0]
+          ? [
+              {
+                url: journal._embedded['wp:featuredmedia'][0].source_url,
+                width: 1200,
+                height: 630,
+                alt: title,
+              },
+            ]
+          : [],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: title,
+        description: description,
+        images: journal._embedded?.['wp:featuredmedia']?.[0]?.source_url,
+      },
+      other: {
+        'citation_title': title,
+        'citation_author': authors,
+        'citation_publication_date': publishDate,
+        'citation_journal_title': publisher,
+        'citation_publisher': publisher,
+        'citation_volume': journal.meta.journal_volume || '',
+        'citation_issue': journal.meta.journal_issue || '',
+        'citation_firstpage': journal.meta.journal_pages?.split('-')[0] || '',
+        'citation_lastpage': journal.meta.journal_pages?.split('-')[1] || '',
+        'citation_pdf_url': journal.meta.journal_pdf_url || '',
+        'citation_abstract_html_url': `${SITE_URL}/journal/${journal.slug}`,
+        'citation_fulltext_html_url': `${SITE_URL}/journal/${journal.slug}`,
+        ...(doi && { 'citation_doi': doi }),
+        ...(journal.meta.journal_issn && { 'citation_issn': journal.meta.journal_issn }),
+        'dc.title': title,
+        'dc.creator': authors,
+        'dc.publisher': publisher,
+        'dc.date': publishDate,
+        'dc.type': 'Text',
+        'dc.format': 'text/html',
+        'dc.language': 'en',
+        'dc.identifier': doi || `${SITE_URL}/journal/${journal.slug}`,
+        'dc.description': description,
+        'dc.subject': journal.meta.journal_keywords?.join(', ') || '',
+        'prism.publicationName': publisher,
+        'prism.publicationDate': publishDate,
+        'prism.volume': journal.meta.journal_volume || '',
+        'prism.number': journal.meta.journal_issue || '',
+        'prism.startingPage': journal.meta.journal_pages?.split('-')[0] || '',
+        'prism.endingPage': journal.meta.journal_pages?.split('-')[1] || '',
+        'prism.doi': doi || '',
+        'hw.title': title,
+        'hw.author': authors,
+        'hw.journal': publisher,
+        'hw.volume': journal.meta.journal_volume || '',
+        'hw.issue': journal.meta.journal_issue || '',
+        'hw.spage': journal.meta.journal_pages?.split('-')[0] || '',
+        'hw.epage': journal.meta.journal_pages?.split('-')[1] || '',
+        'hw.year': publishDate,
+        ...(doi && { 'hw.doi': doi }),
+      },
+    };
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+    return {
+      title: 'Journal Not Found',
+      description: 'The requested journal could not be found.',
+    };
+  }
+}
+
+export default async function JournalPage({ params }: Props) {
+  try {
+    const journal = await wpAPI.getJournal(params.slug);
+
+    if (!journal) {
+      notFound();
+    }
+
+    // Generate structured data for the journal article
+    const journalJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'ScholarlyArticle',
+      headline: wpAPI.stripHtml(journal.title.rendered),
+      description: wpAPI.stripHtml(journal.excerpt.rendered),
+      author: journal.meta.journal_authors?.map((author) => ({
+        '@type': 'Person',
+        name: author,
+      })) || [{ '@type': 'Person', name: 'Unknown Author' }],
+      publisher: {
+        '@type': 'Organization',
+        name: journal.meta.journal_publisher || SITE_NAME,
+      },
+      datePublished: journal.date,
+      dateModified: journal.modified,
+      url: `${SITE_URL}/journal/${journal.slug}`,
+      ...(journal.meta.journal_doi && {
+        identifier: [
+          {
+            '@type': 'PropertyValue',
+            propertyID: 'DOI',
+            value: journal.meta.journal_doi,
+          },
+        ],
+      }),
+      ...(journal.meta.journal_issn && {
+        isPartOf: {
+          '@type': 'Periodical',
+          name: journal.meta.journal_publisher || SITE_NAME,
+          issn: journal.meta.journal_issn,
+        },
+      }),
+      ...(journal.meta.journal_abstract && { abstract: journal.meta.journal_abstract }),
+      ...(journal.meta.journal_keywords && { keywords: journal.meta.journal_keywords.join(', ') }),
+      ...(journal._embedded?.['wp:featuredmedia']?.[0] && {
+        image: {
+          '@type': 'ImageObject',
+          url: journal._embedded['wp:featuredmedia'][0].source_url,
+          caption: journal.title.rendered,
+        },
+      }),
+      ...(journal.meta.journal_citation_count && {
+        citedBy: {
+          '@type': 'CreativeWork',
+          name: `${journal.meta.journal_citation_count} citations`,
+        },
+      }),
     };
 
-    fetchJournal();
-  }, [slug]);  // Runs whenever the slug changes
+    // Breadcrumb structured data
+    const breadcrumbJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: SITE_URL,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Journals',
+          item: `${SITE_URL}/#journals`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: wpAPI.stripHtml(journal.title.rendered),
+          item: `${SITE_URL}/journal/${journal.slug}`,
+        },
+      ],
+    };
 
-  if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <>
+        <JsonLd data={journalJsonLd} />
+        <JsonLd data={breadcrumbJsonLd} />
+        <JournalDetail journal={journal} /> {/* Pass journal object */}
+      </>
+    );
+  } catch (error) {
+    console.error('Error loading journal page:', error);
+    notFound();
   }
+}
 
-  if (error || !journal) {
-    return <div>{error || 'Journal not found'}</div>;
+// Generate static params for all published journals (for static generation)
+export async function generateStaticParams() {
+  try {
+    const { journals } = await wpAPI.getJournals({ per_page: 100 });
+    return journals.map((journal) => ({
+      slug: journal.slug,
+    }));
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [];
   }
-
-  const title = journal.title.rendered; // Journal title
-  const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author'; // Authors
-  const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString(); // Publication year
-  const content = journal.content.rendered; // Full text content
-  const abstract = journal.meta?.journal_abstract || 'No abstract available'; // Abstract
-  const publisher = journal.meta?.journal_publisher || ''; // Publisher
-  const doi = journal.meta?.journal_doi; // DOI
-  const issn = journal.meta?.journal_issn; // ISSN
-  const volume = journal.meta?.journal_volume; // Volume
-  const issue = journal.meta?.journal_issue; // Issue
-  const pages = journal.meta?.journal_pages; // Pages
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Journal Title */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">{title}</h1>
-
-        {/* Authors */}
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Authors:</h2>
-        <p className="text-gray-700">{authors}</p>
-
-        {/* Publication Year */}
-        <h3 className="font-semibold text-gray-700 mt-6">Publication Year:</h3>
-        <p>{year}</p>
-
-        {/* Abstract */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-800">Abstract:</h3>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{abstract}</p>
-          </div>
-        </div>
-
-        {/* Full Text */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-800">Full Text:</h3>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="text-gray-700 leading-relaxed whitespace-pre-line">{content}</div>
-          </div>
-        </div>
-
-        {/* Journal Metadata */}
-        <div className="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Publication Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            {publisher && (
-              <div>
-                <span className="font-semibold text-gray-700">Publisher:</span>
-                <span className="ml-2 text-gray-600">{publisher}</span>
-              </div>
-            )}
-            {issn && (
-              <div>
-                <span className="font-semibold text-gray-700">ISSN:</span>
-                <span className="ml-2 text-gray-600">{issn}</span>
-              </div>
-            )}
-            {doi && (
-              <div>
-                <span className="font-semibold text-gray-700">DOI:</span>
-                <a
-                  href={`https://doi.org/${doi}`}
-                  className="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {doi}
-                </a>
-              </div>
-            )}
-            {volume && (
-              <div>
-                <span className="font-semibold text-gray-700">Volume:</span>
-                <span className="ml-2 text-gray-600">{volume}</span>
-              </div>
-            )}
-            {issue && (
-              <div>
-                <span className="font-semibold text-gray-700">Issue:</span>
-                <span className="ml-2 text-gray-600">{issue}</span>
-              </div>
-            )}
-            {pages && (
-              <div>
-                <span className="font-semibold text-gray-700">Pages:</span>
-                <span className="ml-2 text-gray-600">{pages}</span>
-              </div>
-            )}
-            <div>
-              <span className="font-semibold text-gray-700">Published:</span>
-              <span className="ml-2 text-gray-600">{formatDate(journal.date)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons (PDF, Save, Cite) */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          {journal.meta?.journal_pdf_url && (
-            <a
-              href={journal.meta.journal_pdf_url}
-              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Download PDF
-            </a>
-          )}
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Cite Article
-          </button>
-          <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-            </svg>
-            Save to Library
-          </button>
-        </div>
-
-        {/* Back to Journals Button */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <Link href="/journals" className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0L2.586 11H18a1 1 0 110 2H2.586l3.707 3.707a1 1 0 01-1.414 1.414l-5.414-5.414a1 1 0 010-1.414l5.414-5.414a1 1 0 011.414 1.414L2.586 9H18a1 1 0 110 2H7.707z" clipRule="evenodd" />
-            </svg>
-            Back to Journal Library
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
 }
