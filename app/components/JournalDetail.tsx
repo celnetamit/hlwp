@@ -5,57 +5,13 @@ import Link from 'next/link';
 import { wpAPI } from '../lib/wordpress';
 
 interface JournalDetailProps {
-  journalSlug: string; // Expected to receive slug or id as a prop
+  journal: Journal; // Accept journal as a prop
 }
 
-export default function JournalDetail({ journalSlug }: JournalDetailProps) {
-  const [journal, setJournal] = useState<any>(null); // State to store the fetched journal data
-  const [loading, setLoading] = useState(true); // State to manage loading state
-  const [error, setError] = useState<string | null>(null); // State to handle errors
+export default function JournalDetail({ journal }: JournalDetailProps) {
+  const [loading, setLoading] = useState(true); // Loading state
+  const [error, setError] = useState<string | null>(null); // Error state
   const [activeTab, setActiveTab] = useState<'abstract' | 'fulltext' | 'details'>('abstract'); // Tab state
-
-  // Fetch the journal data based on slug or ID
-  useEffect(() => {
-    const fetchJournal = async () => {
-      try {
-        const article = await wpAPI.getArticle(journalSlug);
-        if (article) {
-          setJournal(article); // Set the journal data if available
-        } else {
-          setError('Journal not found'); // Set error if article is not found
-        }
-      } catch (err) {
-        setError('Failed to fetch journal'); // Set error if the fetch fails
-      } finally {
-        setLoading(false); // Set loading to false once the fetch operation is completed
-      }
-    };
-
-    fetchJournal(); // Call the function to fetch the journal data
-  }, [journalSlug]); // Run effect when journalSlug changes
-
-  // If still loading, show a loading message
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  // If there is an error or no journal data, show an error message
-  if (error || !journal) {
-    return <div>{error || 'Journal not found'}</div>;
-  }
-
-  // Extracting properties from the journal
-  const title = journal.title.rendered; // Journal title
-  const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author'; // Authors
-  const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString(); // Publication year
-  const content = journal.content.rendered; // Full text content
-  const abstract = journal.meta?.journal_abstract || 'No abstract available'; // Abstract
-  const publisher = journal.meta?.journal_publisher || ''; // Publisher
-  const doi = journal.meta?.journal_doi; // DOI
-  const issn = journal.meta?.journal_issn; // ISSN
-  const volume = journal.meta?.journal_volume; // Volume
-  const issue = journal.meta?.journal_issue; // Issue
-  const pages = journal.meta?.journal_pages; // Pages
 
   const formatDate = (dateString: string) => {
     try {
@@ -69,10 +25,22 @@ export default function JournalDetail({ journalSlug }: JournalDetailProps) {
     }
   };
 
+  // Extracting journal data
+  const title = journal.title.rendered;
+  const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author';
+  const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString();
+  const content = journal.content.rendered;
+  const abstract = journal.meta?.journal_abstract || 'No abstract available';
+  const publisher = journal.meta?.journal_publisher || '';
+  const doi = journal.meta?.journal_doi;
+  const issn = journal.meta?.journal_issn;
+  const volume = journal.meta?.journal_volume;
+  const issue = journal.meta?.journal_issue;
+  const pages = journal.meta?.journal_pages;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Journal Title */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">{title}</h1>
 
         {/* Authors */}
@@ -83,103 +51,77 @@ export default function JournalDetail({ journalSlug }: JournalDetailProps) {
         <h3 className="font-semibold text-gray-700 mt-6">Publication Year:</h3>
         <p>{year}</p>
 
-        {/* Tab Navigation */}
-        <div className="mt-6 mb-6">
-          <button
-            className={`py-2 px-4 border-b-2 font-medium ${activeTab === 'abstract' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('abstract')}
-          >
-            Abstract
-          </button>
-          <button
-            className={`py-2 px-4 border-b-2 font-medium ${activeTab === 'fulltext' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('fulltext')}
-          >
-            Full Text
-          </button>
-          <button
-            className={`py-2 px-4 border-b-2 font-medium ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('details')}
-          >
-            Details
-          </button>
+        {/* Abstract */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-gray-800">Abstract:</h3>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{abstract}</p>
+          </div>
         </div>
 
-        {/* Content Based on Active Tab */}
-        {activeTab === 'abstract' && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Abstract:</h3>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{abstract}</p>
-            </div>
+        {/* Full Text */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-gray-800">Full Text:</h3>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="text-gray-700 leading-relaxed whitespace-pre-line">{content}</div>
           </div>
-        )}
+        </div>
 
-        {activeTab === 'fulltext' && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Full Text:</h3>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="text-gray-700 leading-relaxed whitespace-pre-line">{content}</div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'details' && (
-          <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Publication Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-              {publisher && (
-                <div>
-                  <span className="font-semibold text-gray-700">Publisher:</span>
-                  <span className="ml-2 text-gray-600">{publisher}</span>
-                </div>
-              )}
-              {issn && (
-                <div>
-                  <span className="font-semibold text-gray-700">ISSN:</span>
-                  <span className="ml-2 text-gray-600">{issn}</span>
-                </div>
-              )}
-              {doi && (
-                <div>
-                  <span className="font-semibold text-gray-700">DOI:</span>
-                  <a
-                    href={`https://doi.org/${doi}`}
-                    className="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {doi}
-                  </a>
-                </div>
-              )}
-              {volume && (
-                <div>
-                  <span className="font-semibold text-gray-700">Volume:</span>
-                  <span className="ml-2 text-gray-600">{volume}</span>
-                </div>
-              )}
-              {issue && (
-                <div>
-                  <span className="font-semibold text-gray-700">Issue:</span>
-                  <span className="ml-2 text-gray-600">{issue}</span>
-                </div>
-              )}
-              {pages && (
-                <div>
-                  <span className="font-semibold text-gray-700">Pages:</span>
-                  <span className="ml-2 text-gray-600">{pages}</span>
-                </div>
-              )}
+        {/* Journal Metadata */}
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Publication Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            {publisher && (
               <div>
-                <span className="font-semibold text-gray-700">Published:</span>
-                <span className="ml-2 text-gray-600">{formatDate(journal.date)}</span>
+                <span className="font-semibold text-gray-700">Publisher:</span>
+                <span className="ml-2 text-gray-600">{publisher}</span>
               </div>
+            )}
+            {issn && (
+              <div>
+                <span className="font-semibold text-gray-700">ISSN:</span>
+                <span className="ml-2 text-gray-600">{issn}</span>
+              </div>
+            )}
+            {doi && (
+              <div>
+                <span className="font-semibold text-gray-700">DOI:</span>
+                <a
+                  href={`https://doi.org/${doi}`}
+                  className="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {doi}
+                </a>
+              </div>
+            )}
+            {volume && (
+              <div>
+                <span className="font-semibold text-gray-700">Volume:</span>
+                <span className="ml-2 text-gray-600">{volume}</span>
+              </div>
+            )}
+            {issue && (
+              <div>
+                <span className="font-semibold text-gray-700">Issue:</span>
+                <span className="ml-2 text-gray-600">{issue}</span>
+              </div>
+            )}
+            {pages && (
+              <div>
+                <span className="font-semibold text-gray-700">Pages:</span>
+                <span className="ml-2 text-gray-600">{pages}</span>
+              </div>
+            )}
+            <div>
+              <span className="font-semibold text-gray-700">Published:</span>
+              <span className="ml-2 text-gray-600">{formatDate(journal.date)}</span>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Action Buttons (PDF, Save, Cite) */}
+        {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8">
           {journal.meta?.journal_pdf_url && (
             <a
