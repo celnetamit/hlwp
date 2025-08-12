@@ -1,5 +1,5 @@
 // lib/wordpress.ts - WordPress API service
-const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://publications.stmjournals.com/wp-json/wp/v2';
+const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://journals.stmjournals.com/wp-json/wp/v2';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
 
