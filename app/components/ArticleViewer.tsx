@@ -127,16 +127,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ article }) => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8">
-          {article.pdfUrl && (
-            <a 
-              href={article.pdfUrl}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Download PDF
-            </a>
-          )}
+          {/* PDF Download removed intentionally */}
           <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
             Cite This Article
           </button>
