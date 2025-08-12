@@ -1,7 +1,6 @@
-// app/journal/[slug]/page.tsx - Fixed Dynamic journal page
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
+import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress'; 
 import { JsonLd } from '../../components/JsonLd';
 import JournalDetail from '../../components/JournalDetail';
 
@@ -11,7 +10,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const journal = await wpAPI.getJournal(params.slug);
+    const journal: Journal = await wpAPI.getJournal(params.slug); // Ensure type is Journal
     
     if (!journal) {
       return {
@@ -77,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'citation_fulltext_html_url': `${SITE_URL}/journal/${journal.slug}`,
         ...(doi && { 'citation_doi': doi }),
         ...(journal.meta.journal_issn && { 'citation_issn': journal.meta.journal_issn }),
-        
+
         // Dublin Core meta tags
         'dc.title': title,
         'dc.creator': authors,
@@ -89,7 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'dc.identifier': doi || `${SITE_URL}/journal/${journal.slug}`,
         'dc.description': description,
         'dc.subject': journal.meta.journal_keywords?.join(', ') || '',
-        
+
         // Additional scholarly meta tags
         'prism.publicationName': publisher,
         'prism.publicationDate': publishDate,
@@ -98,7 +97,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'prism.startingPage': journal.meta.journal_pages?.split('-')[0] || '',
         'prism.endingPage': journal.meta.journal_pages?.split('-')[1] || '',
         'prism.doi': doi || '',
-        
+
         // Highwire Press meta tags
         'hw.title': title,
         'hw.author': authors,
@@ -122,7 +121,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function JournalPage({ params }: Props) {
   try {
-    const journal = await wpAPI.getJournal(params.slug);
+    const journal: Journal = await wpAPI.getJournal(params.slug); // Ensure the type is Journal
     
     if (!journal) {
       notFound();
