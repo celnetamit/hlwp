@@ -83,75 +83,101 @@ export default function JournalDetail({ journalSlug }: JournalDetailProps) {
         <h3 className="font-semibold text-gray-700 mt-6">Publication Year:</h3>
         <p>{year}</p>
 
-        {/* Abstract */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-800">Abstract:</h3>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{abstract}</p>
-          </div>
+        {/* Tab Navigation */}
+        <div className="mt-6 mb-6">
+          <button
+            className={`py-2 px-4 border-b-2 font-medium ${activeTab === 'abstract' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('abstract')}
+          >
+            Abstract
+          </button>
+          <button
+            className={`py-2 px-4 border-b-2 font-medium ${activeTab === 'fulltext' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('fulltext')}
+          >
+            Full Text
+          </button>
+          <button
+            className={`py-2 px-4 border-b-2 font-medium ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('details')}
+          >
+            Details
+          </button>
         </div>
 
-        {/* Full Text */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-800">Full Text:</h3>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="text-gray-700 leading-relaxed whitespace-pre-line">{content}</div>
-          </div>
-        </div>
-
-        {/* Journal Metadata */}
-        <div className="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Publication Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            {publisher && (
-              <div>
-                <span className="font-semibold text-gray-700">Publisher:</span>
-                <span className="ml-2 text-gray-600">{publisher}</span>
-              </div>
-            )}
-            {issn && (
-              <div>
-                <span className="font-semibold text-gray-700">ISSN:</span>
-                <span className="ml-2 text-gray-600">{issn}</span>
-              </div>
-            )}
-            {doi && (
-              <div>
-                <span className="font-semibold text-gray-700">DOI:</span>
-                <a
-                  href={`https://doi.org/${doi}`}
-                  className="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {doi}
-                </a>
-              </div>
-            )}
-            {volume && (
-              <div>
-                <span className="font-semibold text-gray-700">Volume:</span>
-                <span className="ml-2 text-gray-600">{volume}</span>
-              </div>
-            )}
-            {issue && (
-              <div>
-                <span className="font-semibold text-gray-700">Issue:</span>
-                <span className="ml-2 text-gray-600">{issue}</span>
-              </div>
-            )}
-            {pages && (
-              <div>
-                <span className="font-semibold text-gray-700">Pages:</span>
-                <span className="ml-2 text-gray-600">{pages}</span>
-              </div>
-            )}
-            <div>
-              <span className="font-semibold text-gray-700">Published:</span>
-              <span className="ml-2 text-gray-600">{formatDate(journal.date)}</span>
+        {/* Content Based on Active Tab */}
+        {activeTab === 'abstract' && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Abstract:</h3>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{abstract}</p>
             </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'fulltext' && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Full Text:</h3>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-gray-700 leading-relaxed whitespace-pre-line">{content}</div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'details' && (
+          <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Publication Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              {publisher && (
+                <div>
+                  <span className="font-semibold text-gray-700">Publisher:</span>
+                  <span className="ml-2 text-gray-600">{publisher}</span>
+                </div>
+              )}
+              {issn && (
+                <div>
+                  <span className="font-semibold text-gray-700">ISSN:</span>
+                  <span className="ml-2 text-gray-600">{issn}</span>
+                </div>
+              )}
+              {doi && (
+                <div>
+                  <span className="font-semibold text-gray-700">DOI:</span>
+                  <a
+                    href={`https://doi.org/${doi}`}
+                    className="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {doi}
+                  </a>
+                </div>
+              )}
+              {volume && (
+                <div>
+                  <span className="font-semibold text-gray-700">Volume:</span>
+                  <span className="ml-2 text-gray-600">{volume}</span>
+                </div>
+              )}
+              {issue && (
+                <div>
+                  <span className="font-semibold text-gray-700">Issue:</span>
+                  <span className="ml-2 text-gray-600">{issue}</span>
+                </div>
+              )}
+              {pages && (
+                <div>
+                  <span className="font-semibold text-gray-700">Pages:</span>
+                  <span className="ml-2 text-gray-600">{pages}</span>
+                </div>
+              )}
+              <div>
+                <span className="font-semibold text-gray-700">Published:</span>
+                <span className="ml-2 text-gray-600">{formatDate(journal.date)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons (PDF, Save, Cite) */}
         <div className="flex flex-wrap gap-4 mb-8">
