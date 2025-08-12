@@ -66,11 +66,24 @@ export interface Category {
   count: number; // Number of posts in this category
 }
 
-export class WordPressAPI {
+export interface Author {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  avatar_urls: Record<string, string>;
+}
+
+class WordPressAPI {
   private baseUrl: string;
 
   constructor() {
     this.baseUrl = WORDPRESS_API_URL;
+  }
+
+  // Helper method to strip HTML tags
+  stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, ''); // Regular expression to remove HTML tags
   }
 
   private async fetchAPI(endpoint: string, options: RequestInit = {}) {
@@ -183,8 +196,28 @@ export class WordPressAPI {
       return [];
     }
   }
+
+  // New helper to generate citation
+  generateCitation(journal: Journal): string {
+    const authors = journal.meta.journal_authors?.join(', ') || 'Unknown Author';
+    const title = this.stripHtml(journal.title.rendered);
+    const year = journal.meta.journal_year || new Date(journal.date).getFullYear().toString();
+    const publisher = journal.meta.journal_publisher || SITE_NAME;
+    return `${authors} (${year}). ${title}. ${publisher}.`;
+  }
+
+  // Method to test API connection
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.fetchAPI('/posts?per_page=1');
+      return true;
+    } catch (error) {
+      console.error('WordPress API connection test failed:', error);
+      return false;
+    }
+  }
 }
 
 export const wpAPI = new WordPressAPI();
-export { SITE_URL, SITE_NAME }; // Make sure SITE_NAME is exported
-export type { Journal };
+export type { Journal, Category, Author };
+export { SITE_URL, SITE_NAME };
