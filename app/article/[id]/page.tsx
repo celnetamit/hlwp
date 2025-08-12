@@ -1,212 +1,123 @@
-import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { JsonLd } from '../../components/JsonLd'
-import ArticleViewer from '../../components/ArticleViewer'
-import { wpAPI } from '../../lib/wordpress'
+'use client';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com'
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library'
+import { useState, useEffect } from 'react';
+import { wpAPI } from '../../lib/wordpress';
 
-interface Article {
-  id: string
-  title: string
-  authors: string[]
-  abstract: string
-  fullText?: string
-  keywords: string[]
-  doi?: string
-  publishedDate: string
-  journal: string
-  volume?: string
-  issue?: string
-  pages?: string
-  pdfUrl?: string
-  citations?: number
-  references?: string[]
-  subjects: string[]
-  language?: string
-  publisher?: string
+interface ArticleProps {
+  id: string;
 }
 
-// Function to fetch the article based on id or slug
-async function getArticle(id: string): Promise<Article | null> {
-  const post = await wpAPI.getArticle(id);
-  if (!post) return null;
+export default function Article({ id }: ArticleProps) {
+  const [article, setArticle] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Ensure properties like journal_citations and others are safely accessed
-  return {
-    id: post.id.toString(),
-    title: post.title.rendered,
-    authors: post.meta.journal_authors || [],
-    abstract: post.meta.journal_abstract || '',
-    keywords: post.meta.journal_keywords || [],
-    publishedDate: post.date,
-    journal: post.meta.journal_publisher || 'STM Journals',
-    volume: post.meta.journal_volume,
-    issue: post.meta.journal_issue,
-    pages: post.meta.journal_pages,
-    pdfUrl: post.meta.journal_pdf_url,
-    citations: post.meta.journal_citation_count ?? 0,  // Use nullish coalescing to default to 0 if missing
-    references: post.meta.journal_citations ?? [],    // Use an empty array if citations are missing
-    subjects: post.meta.journal_keywords || [],
-    language: post.meta.journal_language,
-    publisher: post.meta.journal_publisher || 'STM Journals',
-  };
-}
+  // Fetch article based on ID or slug
+  useEffect(() => {
+    async function fetchArticle() {
+      try {
+        setLoading(true);
+        const post = await wpAPI.getArticle(id);
 
-// Generate metadata for SEO and social media sharing
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const article = await getArticle(params.id)
+        if (!post) {
+          setError('Article not found');
+          return;
+        }
 
-  if (!article) {
-    return {
-      title: 'Article Not Found',
-      description: 'The requested article could not be found.',
+        // Ensure properties like journal_citations and others are safely accessed
+        const citations = post.meta.journal_citation_count ?? 0;  // Default to 0 if citation count is missing
+        const references = post.meta.journal_citations ?? [];      // Default to empty array if citations are missing
+
+        setArticle({
+          ...post,
+          citations,
+          references,
+        });
+      } catch (err) {
+        setError('Failed to load article');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    fetchArticle();
+  }, [id]);
+
+  if (loading) {
+    return <div className="text-center text-xl text-gray-600">Loading...</div>;
   }
 
-  const articleUrl = `${SITE_URL}/article/${article.id}`
-
-  return {
-    title: `${article.title} | ${SITE_NAME}`,
-    description: article.abstract.substring(0, 160) + '...',
-    keywords: article.keywords.join(', '),
-    authors: article.authors.map(name => ({ name })),
-    alternates: {
-      canonical: articleUrl,
-    },
-    openGraph: {
-      title: article.title,
-      description: article.abstract.substring(0, 200) + '...',
-      url: articleUrl,
-      type: 'article',
-      publishedTime: article.publishedDate,
-      authors: article.authors,
-      section: article.subjects[0] || 'Research',
-      tags: article.keywords,
-    },
-    twitter: {
-      card: 'summary',
-      title: article.title,
-      description: article.abstract.substring(0, 200) + '...',
-    },
-    other: {
-      'citation_title': article.title,
-      'citation_author': article.authors.join('; '),
-      'citation_publication_date': article.publishedDate.split('T')[0],
-      'citation_journal_title': article.journal,
-      'citation_publisher': article.publisher || 'STM Journals',
-      'citation_volume': article.volume || '',
-      'citation_issue': article.issue || '',
-      'citation_firstpage': article.pages?.split('-')[0] || '',
-      'citation_lastpage': article.pages?.split('-')[1] || '',
-      'citation_doi': article.doi || '',
-      'citation_abstract_html_url': articleUrl,
-      'citation_fulltext_html_url': articleUrl,
-      'citation_pdf_url': article.pdfUrl || `${articleUrl}/pdf`,
-      'citation_language': article.language || 'en',
-      'citation_keywords': article.keywords.join('; '),
-      'dc.title': article.title,
-      'dc.creator': article.authors.join('; '),
-      'dc.publisher': article.publisher || 'STM Journals',
-      'dc.date': article.publishedDate.split('T')[0],
-      'dc.type': 'Text',
-      'dc.format': 'text/html',
-      'dc.identifier': article.doi || articleUrl,
-      'dc.language': article.language || 'en',
-      'dc.subject': article.subjects.join('; '),
-      'dc.description': article.abstract,
-      'dc.rights': '© STM Journals. All rights reserved.',
-      'robots': 'index,follow',
-      'revisit-after': '7 days',
-      'content-language': article.language || 'en',
-    },
+  if (error) {
+    return <div className="text-center text-xl text-red-500">Error: {error}</div>;
   }
-}
-
-// Default Page Component to render article
-export default async function Page({ params }: { params: { id: string } }) {
-  const article = await getArticle(params.id)
 
   if (!article) {
-    notFound()
+    return <div className="text-center text-xl text-gray-600">Article not found.</div>;
   }
 
-  const articleUrl = `${SITE_URL}/article/${article.id}`
-
-  const articleJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ScholarlyArticle',
-    headline: article.title,
-    name: article.title,
-    author: article.authors.map(a => ({ '@type': 'Person', name: a })),
-    publisher: {
-      '@type': 'Organization',
-      name: article.publisher || 'STM Journals',
-      url: SITE_URL,
-    },
-    datePublished: article.publishedDate,
-    dateModified: article.publishedDate,
-    description: article.abstract,
-    abstract: article.abstract,
-    keywords: article.keywords.join(', '),
-    url: articleUrl,
-    mainEntityOfPage: articleUrl,
-    isPartOf: {
-      '@type': 'Periodical',
-      name: article.journal,
-      publisher: {
-        '@type': 'Organization',
-        name: article.publisher || 'STM Journals',
-      },
-    },
-  }
-
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Articles', item: `${SITE_URL}/articles` },
-      { '@type': 'ListItem', position: 3, name: article.title, item: articleUrl },
-    ],
-  }
+  const { title, content, meta } = article;
+  const authors = meta?.journal_authors?.join(', ') || 'Unknown Author';
+  const year = meta?.journal_year || new Date(article.date).getFullYear().toString();
+  const publisher = meta?.journal_publisher || 'Unknown Publisher';
+  const doi = meta?.journal_doi || '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <JsonLd data={articleJsonLd} />
-      <JsonLd data={breadcrumbJsonLd} />
-      <ArticleViewer article={article} />
-      <div className="hidden">
-        <span itemProp="headline">{article.title}</span>
-        <span itemProp="datePublished">{article.publishedDate}</span>
-        <span itemProp="publisher">{article.publisher}</span>
-        {article.authors.map((author, i) => (
-          <span key={i} itemProp="author">{author}</span>
-        ))}
-        {article.keywords.map((keyword, i) => (
-          <span key={i} itemProp="keywords">{keyword}</span>
-        ))}
-        <span itemProp="abstract">{article.abstract}</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Header Section */}
+      <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in-up">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">{title.rendered}</h1>
+
+        {/* Authors */}
+        <div className="text-sm text-gray-600 mb-6">
+          <strong>Authors:</strong> {authors}
+        </div>
+
+        {/* Publication Info */}
+        <div className="text-sm text-gray-600 mb-6">
+          <strong>Published in:</strong> {publisher} ({year})
+          {doi && (
+            <>
+              {' | '}
+              <a href={`https://doi.org/${doi}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                DOI: {doi}
+              </a>
+            </>
+          )}
+        </div>
+
+        {/* Article Content */}
+        <div className="prose" dangerouslySetInnerHTML={{ __html: content.rendered }} />
+
+        {/* Metrics Section */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Metrics</h2>
+          <p><strong>Citations:</strong> {article.citations}</p>
+          
+          <div>
+            <strong>References:</strong>
+            {article.references.length > 0 ? (
+              <ul>
+                {article.references.map((ref: string, index: number) => (
+                  <li key={index} className="text-sm text-gray-700">{ref}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-600">No references available.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Back to Journal Library */}
+      <div className="mt-12 pt-8 border-t border-gray-200">
+        <a href="/" className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0L2.586 11H18a1 1 0 110 2H2.586l3.707 3.707a1 1 0 01-1.414 1.414l-5.414-5.414a1 1 0 010-1.414l5.414-5.414a1 1 0 011.414 1.414L2.586 9H18a1 1 0 110 2H7.707z" clipRule="evenodd" />
+          </svg>
+          Back to Journal Library
+        </a>
       </div>
     </div>
-  )
-}
-
-// Static Params for dynamic routing
-export function generateStaticParams(): { id: string }[] {
-  const articleIds: string[] = []
-
-  journals.forEach(journal => {
-    if (journal.articles) {
-      journal.articles.forEach((article: any) => {
-        articleIds.push(article.id)
-        if (article.slug && article.slug !== article.id) {
-          articleIds.push(article.slug)
-        }
-      })
-    }
-  })
-
-  return articleIds.map(id => ({ id }))
+  );
 }
