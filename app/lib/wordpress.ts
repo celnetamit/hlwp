@@ -97,7 +97,7 @@ class WordPressAPI {
   private getAuthHeaders() {
     const authHeader = 'Basic ' + Buffer.from(`${WORDPRESS_USERNAME}:${WORDPRESS_PASSWORD}`).toString('base64');
     return {
-      'Authorization': authHeader,
+      'Authorization': authHeader,  // Base64 encoded username and password
       'Content-Type': 'application/json',
     };
   }
@@ -122,6 +122,7 @@ class WordPressAPI {
     }
   }
 
+  // Fetch a list of journals
   async getJournals(params: {
     page?: number;
     per_page?: number;
@@ -162,6 +163,7 @@ class WordPressAPI {
     }
   }
 
+  // Fetch a journal by slug
   async getJournal(slug: string): Promise<Journal | null> {
     try {
       const journals = await this.fetchAPI(`/posts?slug=${slug}&_embed=true`);
@@ -172,6 +174,7 @@ class WordPressAPI {
     }
   }
 
+  // Fetch a journal by ID
   async getJournalById(id: number): Promise<Journal | null> {
     try {
       return await this.fetchAPI(`/posts/${id}?_embed=true`);
@@ -181,6 +184,7 @@ class WordPressAPI {
     }
   }
 
+  // Fetch an article either by ID or slug
   async getArticle(idOrSlug: string): Promise<Journal | null> {
     if (/^\d+$/.test(idOrSlug)) {
       const byId = await this.getJournalById(Number(idOrSlug));
@@ -193,6 +197,7 @@ class WordPressAPI {
     return null;
   }
 
+  // Fetch categories
   async getCategories(): Promise<Category[]> {
     try {
       return await this.fetchAPI('/categories');
@@ -202,6 +207,7 @@ class WordPressAPI {
     }
   }
 
+  // Fetch authors
   async getAuthors(): Promise<Author[]> {
     try {
       return await this.fetchAPI('/users');
@@ -211,7 +217,7 @@ class WordPressAPI {
     }
   }
 
-  // New helper to generate citation
+  // Generate citation for a journal
   generateCitation(journal: Journal): string {
     const authors = journal.meta.journal_authors?.join(', ') || 'Unknown Author';
     const title = this.stripHtml(journal.title.rendered);
@@ -220,7 +226,7 @@ class WordPressAPI {
     return `${authors} (${year}). ${title}. ${publisher}.`;
   }
 
-  // Method to test API connection
+  // Test API connection
   async testConnection(): Promise<boolean> {
     try {
       await this.fetchAPI('/posts?per_page=1');
