@@ -1,16 +1,43 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { wpAPI } from '../lib/wordpress';
 import { Journal } from '../lib/wordpress'; // Ensure this import is present
 
-interface JournalDetailProps {
-  journal: Journal; // Accept journal as a prop
-}
+export default function JournalDetail() {
+  const router = useRouter();
+  const { slug } = router.query;  // Extract the slug from the URL
+  const [journal, setJournal] = useState<Journal | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function JournalDetail({ journal }: JournalDetailProps) {
-  // Extracting properties from the journal
+  useEffect(() => {
+    if (!slug) return; // If no slug, do nothing
+
+    const fetchJournal = async () => {
+      try {
+        const journalData = await wpAPI.getJournal(slug as string);  // Fetch journal by slug
+        setJournal(journalData);  // Set the journal data
+      } catch (error) {
+        setError('Failed to load journal details');
+      } finally {
+        setLoading(false);  // Stop loading
+      }
+    };
+
+    fetchJournal();
+  }, [slug]);  // Runs whenever the slug changes
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error || !journal) {
+    return <div>{error || 'Journal not found'}</div>;
+  }
+
   const title = journal.title.rendered; // Journal title
   const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author'; // Authors
   const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString(); // Publication year
