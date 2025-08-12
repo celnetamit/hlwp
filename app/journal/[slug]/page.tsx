@@ -2,15 +2,15 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
 import { JsonLd } from '../../components/JsonLd';
-import JournalDetail from '../../components/JournalDetail';
+import JournalDetail from '../../components/JournalDetail';  // JournalDetail is imported properly
 
 interface Props {
-  params: { slug: string };
+  params: { slug: string };  // Capture slug from URL params
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const journal = await wpAPI.getJournal(params.slug);
+    const journal = await wpAPI.getJournal(params.slug);  // Fetch journal by slug
 
     if (!journal) {
       return {
@@ -19,6 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
+    // Meta details for SEO
     const title = wpAPI.stripHtml(journal.title.rendered);
     const description = wpAPI.stripHtml(journal.excerpt.rendered).substring(0, 160);
     const authors = journal.meta.journal_authors?.join(', ') || 'Unknown Author';
