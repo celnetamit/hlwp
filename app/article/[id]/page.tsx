@@ -1,6 +1,6 @@
 // app/article/[id]/page.tsx
 
-"use client"; 
+"use client"; // Ensure this is a Client Component
 
 import { useState, useEffect } from 'react';
 import { wpAPI } from '../../lib/wordpress';
@@ -27,8 +27,9 @@ export default function Article({ params }: ArticleProps) {
           return;
         }
 
-        const citations = post.meta.journal_citation_count ?? 0;
-        const references = post.meta.journal_citations ?? [];
+        // Use journal_citation_count instead of journal_citations
+        const citations = post.meta.journal_citation_count ?? 0;  // Use nullish coalescing to default to 0 if missing
+        const references = post.meta.journal_citation_count ?? [];  // Default to an empty array if not available
 
         setArticle({
           ...post,
