@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { wpAPI, Journal, SITE_URL, SITE_NAME } from '../../lib/wordpress';
-import { JsonLd } from '../../../components/JsonLd'; // Corrected path
-import JournalDetail from '../../components/JournalDetail'; // Corrected path
+import { wpAPI, Journal, SITE_URL, SITE_NAME } from 'lib/wordpress';
+import { JsonLd } from 'components/JsonLd'; // Corrected path
+import JournalDetail from 'components/JournalDetail'; // Corrected path
 
 interface Props {
   params: { slug: string }; // Capture slug from URL params
