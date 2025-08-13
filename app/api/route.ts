@@ -1,6 +1,6 @@
 // app/api/search/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { journals } from './data/journals'
+import { journals } from '../data/journals'
 
 interface SearchResult {
   type: 'journal' | 'article'
