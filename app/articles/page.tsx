@@ -1,8 +1,8 @@
 // app/articles/page.tsx
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { journals } from './data/journals'
-import { JsonLd } from './components/JsonLd'
+import { journals } from '../data/journals'
+import { JsonLd } from '../components/JsonLd'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com'
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library'
