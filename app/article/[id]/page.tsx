@@ -3,7 +3,7 @@
 "use client"; // Ensure this is a Client Component
 
 import { useState, useEffect } from 'react';
-import { wpAPI } from './lib/wordpress';
+import { wpAPI } from '../lib/wordpress';
 
 interface ArticleProps {
   params: {
