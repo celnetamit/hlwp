@@ -1,8 +1,7 @@
-// app/articles/page.tsx
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { wpAPI, SITE_URL, SITE_NAME, Journal } from '@/lib/wordpress';
-import { JsonLd } from '@/components/JsonLd';
+import { wpAPI, SITE_URL, SITE_NAME, Journal } from '../lib/wordpress';
+import { JsonLd } from '../components/JsonLd';
 
 export const metadata: Metadata = {
   title: `All Articles - ${SITE_NAME}`,
@@ -99,7 +98,6 @@ export default async function ArticlesPage() {
       <JsonLd data={breadcrumbJsonLd} />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <nav className="mb-4 text-sm text-gray-600">
             <Link href="/" className="hover:text-blue-600">Home</Link>
