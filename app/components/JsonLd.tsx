@@ -1,8 +1,5 @@
 // app/components/JsonLd.tsx
-interface JsonLdProps {
-  data: object;
-}
-
+interface JsonLdProps { data: object }
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
