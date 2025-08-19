@@ -1,15 +1,10 @@
 // app/article/[id]/page.tsx
+"use client";
 
-"use client"; // Ensure this is a Client Component
+import { useEffect, useState } from 'react';
+import { wpAPI } from '../../lib/wordpress';
 
-import { useState, useEffect } from 'react';
-import { wpAPI } from '../lib/wordpress';
-
-interface ArticleProps {
-  params: {
-    id: string;
-  };
-}
+interface ArticleProps { params: { id: string } }
 
 export default function Article({ params }: ArticleProps) {
   const [article, setArticle] = useState<any | null>(null);
@@ -17,47 +12,26 @@ export default function Article({ params }: ArticleProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchArticle() {
+    (async () => {
       try {
         setLoading(true);
         const post = await wpAPI.getArticle(params.id);
-
-        if (!post) {
-          setError('Article not found');
-          return;
-        }
-
-        // Use journal_citation_count instead of journal_citations
-        const citations = post.meta.journal_citation_count ?? 0;  // Use nullish coalescing to default to 0 if missing
-        const references = post.meta.journal_citation_count ?? [];  // Default to an empty array if not available
+        if (!post) return setError('Article not found');
 
         setArticle({
           ...post,
-          citations,
-          references,
+          citations: post.meta?.journal_citation_count ?? 0,
+          references: Array.isArray(post.meta?.references) ? post.meta.references : [],
         });
-      } catch (err) {
-        setError('Failed to load article');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchArticle();
+      } catch (e) {
+        console.error(e); setError('Failed to load article');
+      } finally { setLoading(false); }
+    })();
   }, [params.id]);
 
-  if (loading) {
-    return <div className="text-center text-xl text-gray-600">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center text-xl text-red-500">Error: {error}</div>;
-  }
-
-  if (!article) {
-    return <div className="text-center text-xl text-gray-600">Article not found.</div>;
-  }
+  if (loading) return <div className="text-center text-xl text-gray-600">Loading...</div>;
+  if (error) return <div className="text-center text-xl text-red-500">Error: {error}</div>;
+  if (!article) return <div className="text-center text-xl text-gray-600">Article not found.</div>;
 
   const { title, content, meta } = article;
   const authors = meta?.journal_authors?.join(', ') || 'Unknown Author';
@@ -68,39 +42,38 @@ export default function Article({ params }: ArticleProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in-up">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">{title.rendered}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6" dangerouslySetInnerHTML={{ __html: title.rendered }} />
         <div className="text-sm text-gray-600 mb-6">
           <strong>Authors:</strong> {authors}
         </div>
         <div className="text-sm text-gray-600 mb-6">
           <strong>Published in:</strong> {publisher} ({year})
           {doi && (
-            <>
-              {' | '}
+            <> {' | '}
               <a href={`https://doi.org/${doi}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
                 DOI: {doi}
               </a>
             </>
           )}
         </div>
-        <div className="prose" dangerouslySetInnerHTML={{ __html: content.rendered }} />
+
+        <div className="prose max-w-none bg-white p-6 rounded-lg shadow-sm border"
+             dangerouslySetInnerHTML={{ __html: content.rendered }} />
+
         <div className="mt-8">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">Metrics</h2>
           <p><strong>Citations:</strong> {article.citations}</p>
           <div>
             <strong>References:</strong>
-            {article.references.length > 0 ? (
-              <ul>
-                {article.references.map((ref: string, index: number) => (
-                  <li key={index} className="text-sm text-gray-700">{ref}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-600">No references available.</p>
-            )}
+            {article.references?.length ? (
+              <ul>{article.references.map((ref: string, i: number) => (
+                <li key={i} className="text-sm text-gray-700">{ref}</li>
+              ))}</ul>
+            ) : <p className="text-sm text-gray-600">No references available.</p>}
           </div>
         </div>
       </div>
+
       <div className="mt-12 pt-8 border-t border-gray-200">
         <a href="/" className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors">
           <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
