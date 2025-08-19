@@ -1,16 +1,22 @@
-// Define constants for the API and site URLs
-const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://journals.stmjournals.com/wp-json/wp/v2';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
+// app/lib/wordpress.ts
 
-const WORDPRESS_USERNAME = process.env.WORDPRESS_USERNAME || 'your_username';  // Add your WordPress username here
-const WORDPRESS_PASSWORD = process.env.WORDPRESS_PASSWORD || 'your_password';  // Add your WordPress password here
+// Define constants for the API and site URLs
+const WORDPRESS_API_URL =
+  process.env.WORDPRESS_API_URL ||
+  'https://journals.stmjournals.com/wp-json/wp/v2';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://article.stmjournals.com';
+const SITE_NAME =
+  process.env.NEXT_PUBLIC_SITE_NAME || 'Journal Library';
+
+const WORDPRESS_USERNAME = process.env.WORDPRESS_USERNAME || 'your_username';
+const WORDPRESS_PASSWORD = process.env.WORDPRESS_PASSWORD || 'your_password';
 
 if (!WORDPRESS_API_URL) {
   console.warn('WORDPRESS_API_URL not found, using default URL');
 }
 
-// Declare the Journal type
+// Types
 export interface Journal {
   id: number;
   title: { rendered: string };
@@ -49,27 +55,18 @@ export interface Journal {
       source_url: string;
       alt_text: string;
       media_details: {
-        sizes: Record<string, {
-          source_url: string;
-          width: number;
-          height: number;
-        }>;
+        sizes: Record<string, { source_url: string; width: number; height: number }>;
       };
     }>;
-    'wp:term': Array<Array<{
-      id: number;
-      name: string;
-      slug: string;
-    }>>;
+    'wp:term': Array<Array<{ id: number; name: string; slug: string }>>;
   };
 }
 
-// Declare the Category and Author types
 export interface Category {
   id: number;
   name: string;
   slug: string;
-  count: number; // Number of posts in this category
+  count: number;
 }
 
 export interface Author {
@@ -80,7 +77,7 @@ export interface Author {
   avatar_urls: Record<string, string>;
 }
 
-// Define the WordPressAPI class
+// WordPress API client
 class WordPressAPI {
   private baseUrl: string;
 
@@ -90,40 +87,35 @@ class WordPressAPI {
 
   // Helper method to strip HTML tags
   stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, ''); // Regular expression to remove HTML tags
+    return (html || '').replace(/<[^>]*>/g, '');
   }
 
-  // Method to add Authorization header to each API request
+  // Authorization ONLY on the server (prevents bundling secrets to the client)
   private getAuthHeaders() {
-    const authHeader = 'Basic ' + Buffer.from(`${WORDPRESS_USERNAME}:${WORDPRESS_PASSWORD}`).toString('base64');
-    return {
-      'Authorization': authHeader,  // Base64 encoded username and password
-      'Content-Type': 'application/json',
-    };
+    const isServer = typeof window === 'undefined';
+    if (!isServer) {
+      return { 'Content-Type': 'application/json' };
+    }
+    const authHeader =
+      'Basic ' + Buffer.from(`${WORDPRESS_USERNAME}:${WORDPRESS_PASSWORD}`).toString('base64');
+    return { 'Authorization': authHeader, 'Content-Type': 'application/json' };
   }
 
-  // Helper function to handle pagination correctly
+  // Generic fetch with basic error handling
   private async fetchAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
-    try {
-      const response = await fetch(url, {
-        headers: this.getAuthHeaders(),  // Add Authorization header here
-        cache: 'no-store',
-        ...options,
-      });
-
-      if (!response.ok) {
-        throw new Error(`WordPress API error: ${response.status} - ${response.statusText}`);
-      }
-
-      return response.json();
-    } catch (error) {
-      console.error(`Error fetching from ${url}:`, error);
-      throw error;
+    const res = await fetch(url, {
+      headers: this.getAuthHeaders(),
+      cache: 'no-store',
+      ...options,
+    });
+    if (!res.ok) {
+      throw new Error(`WordPress API error: ${res.status} - ${res.statusText} (${url})`);
     }
+    return res.json();
   }
 
-  // Fetch a list of journals with pagination support
+  // List with pagination
   async getJournals(params: {
     page?: number;
     per_page?: number;
@@ -131,107 +123,83 @@ class WordPressAPI {
     categories?: string;
     orderby?: 'date' | 'title' | 'modified';
     order?: 'asc' | 'desc';
-  } = {}): Promise<{ journals: Journal[], totalPages: number, total: number }> {
+  } = {}): Promise<{ journals: Journal[]; totalPages: number; total: number }> {
     const queryParams = new URLSearchParams({
-      _embed: 'true',  // Get embedded data (e.g., author, featured media)
-      per_page: (params.per_page || 10).toString(), // Default per_page to 10
-      page: (params.page || 1).toString(),  // Default page to 1
-      orderby: params.orderby || 'date',  // Default orderby to date
-      order: params.order || 'desc',  // Default order to descending
-      ...(params.search && { search: params.search }),  // Search term
-      ...(params.categories && { categories: params.categories }),  // Categories filter
+      _embed: 'true',
+      per_page: String(params.per_page ?? 10),
+      page: String(params.page ?? 1),
+      orderby: params.orderby ?? 'date',
+      order: params.order ?? 'desc',
+      ...(params.search ? { search: params.search } : {}),
+      ...(params.categories ? { categories: params.categories } : {}),
     });
 
-    try {
-      const response = await fetch(`${this.baseUrl}/posts?${queryParams}`, {
-        headers: this.getAuthHeaders(),  // Include authorization header
-      });
+    const response = await fetch(`${this.baseUrl}/posts?${queryParams}`, {
+      headers: this.getAuthHeaders(),
+      cache: 'no-store',
+    });
 
-      if (!response.ok) {
-        throw new Error(`WordPress API error: ${response.status} - ${response.statusText}`);
-      }
-
-      const journals = await response.json();
-      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');  // Extract total pages
-      const total = parseInt(response.headers.get('X-WP-Total') || '0');  // Extract total count of posts
-
-      return { journals, totalPages, total };
-    } catch (error) {
-      console.error('Error fetching journals:', error);
-      return { journals: [], totalPages: 1, total: 0 };
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status} - ${response.statusText}`);
     }
+
+    const journals = (await response.json()) as Journal[];
+    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10);
+    const total = parseInt(response.headers.get('X-WP-Total') || '0', 10);
+
+    return { journals, totalPages, total };
   }
 
-  // Fetch a journal by its slug
   async getJournal(slug: string): Promise<Journal | null> {
-    try {
-      const journals = await this.fetchAPI(`/posts?slug=${slug}&_embed=true`);
-      return journals[0] || null;
-    } catch (error) {
-      console.error('Error fetching journal:', error);
-      return null;
-    }
+    const data = (await this.fetchAPI(`/posts?slug=${encodeURIComponent(slug)}&_embed=true`)) as Journal[];
+    return data[0] || null;
   }
 
-  // Fetch a journal by ID
   async getJournalById(id: number): Promise<Journal | null> {
     try {
-      return await this.fetchAPI(`/posts/${id}?_embed=true`);
-    } catch (error) {
-      console.error('Error fetching journal by ID:', error);
+      return (await this.fetchAPI(`/posts/${id}?&_embed=true`)) as Journal;
+    } catch {
       return null;
     }
   }
 
-  // Fetch an article either by ID or slug
   async getArticle(idOrSlug: string): Promise<Journal | null> {
     if (/^\d+$/.test(idOrSlug)) {
       const byId = await this.getJournalById(Number(idOrSlug));
       if (byId) return byId;
     }
-
-    const bySlug = await this.getJournal(idOrSlug);
-    if (bySlug) return bySlug;
-
-    return null;
+    return await this.getJournal(idOrSlug);
   }
 
-  // Fetch categories
   async getCategories(): Promise<Category[]> {
     try {
-      return await this.fetchAPI('/categories');
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      return (await this.fetchAPI('/categories')) as Category[];
+    } catch {
       return [];
     }
   }
 
-  // Fetch authors
   async getAuthors(): Promise<Author[]> {
     try {
-      return await this.fetchAPI('/users');
-    } catch (error) {
-      console.error('Error fetching authors:', error);
+      return (await this.fetchAPI('/users')) as Author[];
+    } catch {
       return [];
     }
   }
 
-  // Generate citation for a journal
   generateCitation(journal: Journal): string {
-    const authors = journal.meta.journal_authors?.join(', ') || 'Unknown Author';
+    const authors = journal.meta?.journal_authors?.join(', ') || 'Unknown Author';
     const title = this.stripHtml(journal.title.rendered);
-    const year = journal.meta.journal_year || new Date(journal.date).getFullYear().toString();
-    const publisher = journal.meta.journal_publisher || SITE_NAME;
+    const year = journal.meta?.journal_year || new Date(journal.date).getFullYear().toString();
+    const publisher = journal.meta?.journal_publisher || SITE_NAME;
     return `${authors} (${year}). ${title}. ${publisher}.`;
   }
 
-  // Test API connection
   async testConnection(): Promise<boolean> {
     try {
       await this.fetchAPI('/posts?per_page=1');
       return true;
-    } catch (error) {
-      console.error('WordPress API connection test failed:', error);
+    } catch {
       return false;
     }
   }
@@ -239,4 +207,4 @@ class WordPressAPI {
 
 // Instantiate and export the API client
 export const wpAPI = new WordPressAPI();
-export { SITE_URL, SITE_NAME };
+export { SITE_URL, SITE_NAME, WORDPRESS_API_URL };
