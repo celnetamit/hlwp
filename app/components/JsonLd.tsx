@@ -1,6 +1,6 @@
-///home/itb01/journal-library/app/components/JsonLd.tsx
+// app/components/JsonLd.tsx
 interface JsonLdProps {
-  data: object
+  data: object;
 }
 
 export function JsonLd({ data }: JsonLdProps) {
@@ -9,5 +9,5 @@ export function JsonLd({ data }: JsonLdProps) {
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />
-  )
+  );
 }
