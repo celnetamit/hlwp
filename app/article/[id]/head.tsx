@@ -1,4 +1,3 @@
-// app/article/[id]/head.tsx
 import { SITE_URL, SITE_NAME, wpAPI } from '../../lib/wordpress';
 
 export default async function Head({ params }: { params: { id: string } }) {
